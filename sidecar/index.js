@@ -546,6 +546,10 @@ const SPECIALIST_CLASSES = (sharedSpecialties.BUILTINS || []).map(s => ({ id: s.
 function ENV(suffix) { const k = 'STARNET_' + suffix; return (k in process.env) ? process.env[k] : process.env['SKYNET_' + suffix]; }
 
 const PORT = Number(ENV('PORT') || process.env.PORT) || 8787;
+// starnet-berries: the address the Commander's BROWSER reaches this station at. OAuth providers (MCP connectors such
+// as Vercel, Spotify) send the browser back to a redirect URI built from it; on the hosted VPS the loopback default is
+// the server's own loopback, which the user's browser cannot reach. Set STARNET_PUBLIC_URL (deploy/Dockerfile does).
+const PUBLIC_BASE = String(ENV('PUBLIC_URL') || '').trim().replace(/\/+$/, '') || ('http://127.0.0.1:' + PORT);
 const API_TOKEN = String(ENV('API_TOKEN') || crypto.randomBytes(32).toString('hex'));
 // DEV fast-path (the `npm run dev:seed` launcher sets this): when on, the served index.html carries a small
 // boot payload (window.__STARNET_DEV__ = {model, prov}) so a fresh browser origin auto-resumes the server-
@@ -2719,7 +2723,7 @@ async function dirStatAllowed(abs) {
 // SPOTIFY (the JUKEBOX skill): ONE durable OAuth session for the station, persisted OUTSIDE any agent jail
 // (WORKSPACES/.secrets/spotify.json — not reachable via /api/file). PKCE flow → client_id only, never a secret.
 // The redirect URI is fixed + must be registered verbatim in the user's Spotify app (loopback IP, not localhost).
-const SPOTIFY_REDIRECT = 'http://127.0.0.1:' + PORT + '/api/spotify/callback';
+const SPOTIFY_REDIRECT = PUBLIC_BASE + '/api/spotify/callback';   // starnet-berries: PUBLIC_BASE
 const spotifyStore = makeSpotifyStore({ fsp, pathMod: path, dir: path.join(WORKSPACES, '.secrets'), fetchImpl: globalThis.fetch, now: () => Date.now() });
 // in-flight PKCE verifiers keyed by the OAuth `state` (a round-trip completes in seconds). Pruned on each start.
 const spotifyPending = new Map();
@@ -7296,7 +7300,7 @@ if (require.main === module) {
    tokens and dynamically-registered client credentials live in a PROTECTED sibling file, never on the bus, never
    returned by /api/connectors. The access token lives ONLY here — an oauth connector's persisted config carries
    `oauth:true` but no token, so a stale/expired token is never persisted or reused. ---- */
-const CONNECTOR_OAUTH_REDIRECT = 'http://127.0.0.1:' + PORT + '/api/connectors/oauth/callback';
+const CONNECTOR_OAUTH_REDIRECT = PUBLIC_BASE + '/api/connectors/oauth/callback';   // starnet-berries: PUBLIC_BASE
 // EVERY connector-OAuth leg (probe, metadata, DCR, token exchange, refresh) and a custom server's authorization endpoint
 // go through sidecar/mcp/oauth-fetch.js, which owns the outbound boundary's connectorOauth row: a public https host with
 // no credentials, one DNS answer per leg, the socket pinned to every address that answer validated.
