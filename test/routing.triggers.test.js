@@ -170,7 +170,8 @@ const { makeFolderWatcher, makeFolderPolicy } = require('../sidecar/routing/trig
     watcher: makeFolderWatcher({ fsp, pathMod: path, settleMs: 0 }),
     now: () => clock, newId: () => 'id' + (++n) + 'abcdef0123456789'
   }, extra));
-  let R = mk();
+  const finished = [];   // starnet-berries: the onFinished hook (webhook job pings)
+  let R = mk({ onFinished: (t, o, e) => finished.push({ t, o, e }) });
   const cw = R.create({ kind: 'webhook', lineId: 'L1', name: 'hook', maxPerHour: 3 }, { secretHash: T.hashSecret('k') });
   A.ok(cw.ok && T.ID_RE.test(cw.trigger.id), 'create returns a trigger with a well-formed id');
   const wid = cw.trigger.id;
@@ -183,6 +184,7 @@ const { makeFolderWatcher, makeFolderPolicy } = require('../sidecar/routing/trig
   A.eq(v.fires, 1, 'fires counts the dispatch');
   A.ok(v.lastOutcome && v.lastOutcome.ok === true && v.lastOutcome.runs === 2, 'a clean two-dock run to the OUTBOX is ok: ' + JSON.stringify(v.lastOutcome));
   A.eq(v.lastError, null, 'no error on a clean fire');
+  A.ok(finished.length === 1 && finished[0].t.kind === 'webhook' && finished[0].t.name === 'hook' && finished[0].o.ok === true && !finished[0].e, 'onFinished hears the settled job once, after its record');
   A.ok(emitted.some(e => e.nm === 'workitem.placed' && e.p.kind === 'trigger' && e.p.agentId === 'agent-a' && e.p.lineId === 'L1'), 'a trigger crate is placed at the routed dock, stamped with the line');
   A.ok(emitted.some(e => e.nm === 'workitem.delivered' && e.p.finalQueueId === 'outbox'), 'and it is delivered to the OUTBOX');
   A.ok(/^\[|job one/.test(hubCalls[0].text) && hubCalls[0].chatId === 'trg-' + wid, 'the hub got the work item on the trigger\'s own chat');
