@@ -13,12 +13,16 @@ browser-mode constraints). Upstream's own docs are in `docs/`.
   health check). Keep `main` deployable.
 - Fast local checks: `node --check sidecar/index.js`; targeted tests via
   `node scripts/run-test-list.mjs` / files in `test/`. The full upstream suites are long.
+- Release-claims lock: `test/qa-product-perfect-claims.test.js` (gate CI) fails whenever a release-surface
+  file changes (most of `frontend/`, `sidecar/`, the top-level docs). After committing such a change, run
+  `node scripts/qa/product-perfect/relock-surface.mjs` on the clean tree and commit `qa/product-perfect/claims.json`.
 - Upstream sync: `git remote add upstream https://github.com/androoAGI/starnet` and merge
   `upstream/feat/harness-backend` (upstream's default branch). `sidecar/index.js` is the
   usual conflict hotspot, so keep our changes there small and well-marked.
 
 ## Fork-specific code (keep these when merging upstream)
-- `frontend/mobile.js`, `frontend/mobile.css` and their tags in `frontend/index.html`:
+- `frontend/app/mobile.js`, `frontend/mobile.css` and their tags in `frontend/index.html` (the script tag goes right
+  after `app/bootguard.js`, which `test/bootguard.test.js` requires to be the first script):
   zoom lock and touch controls (touch → the mouse/wheel events `frontend/app/world.js`
   already handles).
 - `deploy/` and `.github/workflows/deploy-image.yml`.

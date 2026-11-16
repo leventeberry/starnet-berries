@@ -18,8 +18,8 @@
   "expectedClaimCount": 37,
   "releaseSurface": {
     "algorithm": "sha256",
-    "sourceCommit": "bdc0174d80195005a5217ef24cf92a9f7dbc6c3f",
-    "pathSetSha256": "8394eca9e4974a998b07e0619201f84827ddf7781133ca7c179f8deba46fc595",
+    "sourceCommit": "7664d1d0c3c9997ed0760d0a2e10e9910ed87916",
+    "pathSetSha256": "8dc985299865dc2306ed1bc8ebd72329a0bb5b994133019e5aaa947fd7f3f8e6",
     "files": [
       {
         "path": "INSTALL.md",
@@ -173,8 +173,8 @@
       },
       {
         "path": "frontend/app/app.js",
-        "bytes": 483199,
-        "sha256": "021f06f9a43a0d08ba21a896f43958aff96a2a2ffbf89f8542341dca371a26ec"
+        "bytes": 484269,
+        "sha256": "bd95950b1be157bfe9cef9fbf7f2e2ec6ea26c5a2d5c62eaa4f67aba5f724518"
       },
       {
         "path": "frontend/app/approved-sheet-effects.js",
@@ -725,6 +725,11 @@
         "path": "frontend/app/mintstore.js",
         "bytes": 4224,
         "sha256": "20e8b38573520a13f40ad7b30fb46e1e946566ab4f7f85c33ab8f7ef734ac7d2"
+      },
+      {
+        "path": "frontend/app/mobile.js",
+        "bytes": 4837,
+        "sha256": "1ab0dd69156dabad8f7117b2e0750abe9197e240737eccd6f0202fdf15745eef"
       },
       {
         "path": "frontend/app/modeldock.js",
@@ -1903,8 +1908,8 @@
       },
       {
         "path": "frontend/index.html",
-        "bytes": 101227,
-        "sha256": "859dd9024bcbf0a3f9f32151de2c10ee1829cb555ad0fb36af2462a96758863f"
+        "bytes": 101682,
+        "sha256": "a254e249d365fda579a4aa455cdd81d18806d047059c9283041fe5fdd40b8048"
       },
       {
         "path": "frontend/js/arcade.js",
@@ -1930,6 +1935,11 @@
         "path": "frontend/js/util.js",
         "bytes": 43690,
         "sha256": "11db2d2031a36f0063820886d588346da5b4a290f7332f0ac8bdbf8e92da7fff"
+      },
+      {
+        "path": "frontend/mobile.css",
+        "bytes": 625,
+        "sha256": "9e61e5f7158a452cedf94279590bf63b99784af541e419335f32c83015f6f585"
       },
       {
         "path": "frontend/plugin-kit/kit.css",

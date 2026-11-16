@@ -1,0 +1,13 @@
+/* starnet-berries: no browser zoom, app-like touch behaviour. */
+html, body {
+  touch-action: pan-x pan-y;          /* blocks pinch-zoom and double-tap zoom */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;          /* no pull-to-refresh / rubber-banding */
+  -webkit-tap-highlight-color: transparent;
+}
+canvas { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* iOS zooms into inputs under 16px; keep them at 16px on touch devices */
+@media (pointer: coarse) {
+  input, textarea, select { font-size: max(16px, 1em) !important; }
+}

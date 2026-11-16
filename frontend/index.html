@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
-<!-- starnet-berries: zoom lock + touch controls for the hosted browser build (frontend/mobile.*) -->
+<!-- starnet-berries: zoom lock + touch controls for the hosted browser build (frontend/mobile.css + frontend/app/mobile.js, whose tag sits right after app/bootguard.js) -->
 <link rel="stylesheet" href="mobile.css">
-<script src="mobile.js"></script>
 <title>STARNET</title>
 <!-- no favicon file ships: an empty data: icon stops a full browser probing /favicon.ico (a 404 in the console on every load) -->
 <link rel="icon" href="data:,">
@@ -318,7 +317,7 @@
                  StarNet never holds the Claude credential (app.js claudeCli*). -->
             <div id="claude-cli-block" class="hidden">
               <div class="codex-signin">
-                <div id="claude-cli-status" class="codex-status">checking for Claude Code on this computer…</div>
+                <div id="claude-cli-status" class="codex-status">checking for Claude Code on this station…</div>
                 <div id="claude-cli-install" class="claude-cli-install hidden">
                   <div class="dim hint">Install Claude Code once — paste this into <span id="claude-cli-shell">a terminal</span>:</div>
                   <code id="claude-cli-install-cmd" class="claude-cli-cmd"></code>
@@ -338,7 +337,7 @@
                     <button type="button" id="btn-claude-code" class="btn">SUBMIT ▸</button>
                   </div>
                 </div>
-                <div class="dim hint" id="claude-cli-hint">Uses your Claude subscription (Pro, Max, Team or Enterprise) through <b>Claude Code</b> on this computer. Claude Code keeps your sign-in — StarNet never sees or stores it. StarNet keeps every Claude Code tool switched off and runs its own, so your station's permissions still apply. Subscription turns are booked at $0; an API-key sign-in is booked at the cost Claude Code reports.</div>
+                <div class="dim hint" id="claude-cli-hint">Uses your Claude subscription (Pro, Max, Team or Enterprise) through <b>Claude Code</b> on this station. Claude Code keeps your sign-in — StarNet never sees or stores it. StarNet keeps every Claude Code tool switched off and runs its own, so your station's permissions still apply. Subscription turns are booked at $0; an API-key sign-in is booked at the cost Claude Code reports.</div>
               </div>
             </div>
 
@@ -823,6 +822,7 @@
 </section>
 
 <script src="app/bootguard.js"></script><!-- BOOT GUARD: installs the window error/unhandledrejection listeners before anything else can fail silently, then verifies the critical module globals after DOMContentLoaded (fatal banner names the file). Reads no state — the ONE script allowed ahead of legacymigrate -->
+<script src="app/mobile.js"></script><!-- starnet-berries: zoom lock + touch controls (frontend/app/mobile.js); after the boot guard, which must stay the first script -->
 <script src="app/legacymigrate.js"></script>
 <script src="app/glass-boot.js"></script><!-- FIRST store-touching script: migrate starnet.* localStorage keys -> starnet.* before any store reads -->
 <script src="js/util.js"></script>
