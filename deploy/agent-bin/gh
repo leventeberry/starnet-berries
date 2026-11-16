@@ -1,0 +1,4 @@
+#!/bin/sh
+# Use the StarNet KEYS-tab "GitHub" entry (GITHUB_API_KEY) unless a token is already set.
+if [ -z "$GH_TOKEN" ] && [ -n "$GITHUB_API_KEY" ]; then GH_TOKEN="$GITHUB_API_KEY"; export GH_TOKEN; fi
+exec /usr/bin/gh "$@"

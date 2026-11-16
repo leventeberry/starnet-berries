@@ -14,6 +14,17 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} --no-audit -
  && npm cache clean --force && claude --version
 # root owns the install, so the CLI can't update itself; updates come from bumping the version above
 ENV DISABLE_AUTOUPDATER=1
+# Agent CLIs: GitHub (gh) and Vercel. StarNet scrubs token-like env vars from agent shells and hands
+# KEYS-tab entries over as <NAME>_API_KEY, so the wrappers in deploy/agent-bin map a "GitHub" key to
+# GH_TOKEN and a "Vercel" key to VERCEL_TOKEN. git over https authenticates through gh.
+ARG VERCEL_CLI_VERSION=65.15.0
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list \
+ && apt-get update && apt-get install -y --no-install-recommends gh && rm -rf /var/lib/apt/lists/* \
+ && npm install -g --prefix /opt/vercel-cli --no-audit --no-fund vercel@${VERCEL_CLI_VERSION} && npm cache clean --force \
+ && git config --system credential.https://github.com.helper '' \
+ && git config --system --add credential.https://github.com.helper '!/usr/local/bin/gh auth git-credential'
+COPY deploy/agent-bin/gh deploy/agent-bin/vercel /usr/local/bin/
 WORKDIR /app
 RUN chown node:node /app
 USER node
