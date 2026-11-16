@@ -37,6 +37,7 @@
     P('quests', 'QUESTS', 'the quest log: personal quests, goal steps and floor gaps', { term: 'quests' }),
     P('progress', 'QUESTS › PROGRESS', 'station level, systems coming online, the goal constellation', { term: 'quests', section: 'progress' }),
     P('trophies', 'TROPHY CASE', 'trophies the station has earned', { term: 'trophies' }),
+    P('figma', 'FIGMA', 'view a Figma design, FigJam board or prototype from its figma.com link', { term: 'figma' }),   // starnet-berries
     // ---- BUILD / CONNECT ----
     P('build-mode', 'BUILD MODE', 'the full-screen station builder: rooms, decks, props (a prop in an agent\'s room grants a power)', { fn: 'build' }),
     P('abilities', 'CONNECT › ABILITIES', 'the one place platforms get connected, and everything agents can do', { term: 'connectors' }),

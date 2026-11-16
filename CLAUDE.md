@@ -28,6 +28,10 @@ browser-mode constraints). Upstream's own docs are in `docs/`.
   full-height windows). The `mobile.css` link is the LAST stylesheet in `<head>` so its phone
   rules win; one small marked tweak lives in `frontend/app/glass-demo.js` (`seat`).
 - `deploy/` and `.github/workflows/deploy-image.yml`.
+- Figma: `sidecar/mcp/transport.figma.js`, `frontend/app/windows/figma.js` (+ its script tag after
+  `windows/trophies.js`), the `figma` row in `sidecar/mcp/catalog.js`, and `starnet-berries`-marked lines in
+  `sidecar/index.js` (STARNET_PUBLIC_ORIGIN redirect, Figma env client, refreshEndpoint, /api/figma/embed, CSP
+  frame-src) and `sidecar/mcp/catalog.js`/`frontend/app/places.js`. See `deploy/README.md` § Figma.
 
 ## Browser-mode notes
 - The sidecar only serves loopback `Host`s and only gives its API token to a same-uid
