@@ -24,7 +24,9 @@ browser-mode constraints). Upstream's own docs are in `docs/`.
 - `frontend/app/mobile.js`, `frontend/mobile.css` and their tags in `frontend/index.html` (the script tag goes right
   after `app/bootguard.js`, which `test/bootguard.test.js` requires to be the first script):
   zoom lock and touch controls (touch → the mouse/wheel events `frontend/app/world.js`
-  already handles).
+  already handles), plus the phone layout fixes (full-screen COMMS, scrollable build sheet,
+  full-height windows). The `mobile.css` link is the LAST stylesheet in `<head>` so its phone
+  rules win; one small marked tweak lives in `frontend/app/glass-demo.js` (`seat`).
 - `deploy/` and `.github/workflows/deploy-image.yml`.
 
 ## Browser-mode notes
