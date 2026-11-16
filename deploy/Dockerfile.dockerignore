@@ -1,0 +1,10 @@
+.git
+.github
+website
+docs
+test
+qa
+output
+src-tauri
+node_modules
+deploy

@@ -1,0 +1,55 @@
+# Builds the hosted browser image and publishes it to GHCR.
+# Every push to main -> ghcr.io/leventeberry/starnet-berries:main (+ :sha-<commit>).
+# The VPS polls :main every ~2 minutes and deploys it, rolling back if
+# /api/health fails (platform-vps scripts/autodeploy.sh).
+name: deploy-image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-image
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Free runner disk (image is several GB)
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Quick sanity check (sidecar parses, mobile layer is wired in)
+        run: |
+          node --check sidecar/index.js
+          grep -q 'mobile.js' frontend/index.html
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          build-args: BUILD_SHA=${{ github.sha }}
+          tags: |
+            ghcr.io/${{ github.repository }}:main
+            ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=min
