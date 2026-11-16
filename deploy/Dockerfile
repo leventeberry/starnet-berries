@@ -2,7 +2,8 @@
 # Build from the repo root:  docker build -f deploy/Dockerfile .
 # CI (.github/workflows/deploy-image.yml) pushes ghcr.io/leventeberry/starnet-berries:main,
 # which the VPS deploys automatically (see deploy/README.md).
-FROM node:20-bookworm
+# Node 22: the station browser drives Chrome over the global WebSocket, which Node 20 lacks.
+FROM node:22-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 # Claude Code CLI for the CLAUDE CODE provider (it runs `claude` on the station, i.e. this container).
@@ -25,6 +26,13 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o 
  && git config --system credential.https://github.com.helper '' \
  && git config --system --add credential.https://github.com.helper '!/usr/local/bin/gh auth git-credential'
 COPY deploy/agent-bin/gh deploy/agent-bin/vercel /usr/local/bin/
+# Station browser: Debian's Chromium plus its system libraries and fonts. Docker's seccomp profile blocks the
+# user namespaces Chromium's sandbox needs (the container itself is the boundary: cap_drop ALL, no-new-privileges),
+# so it runs --no-sandbox; /dev/shm is 64 MB in Docker, hence --disable-dev-shm-usage.
+RUN apt-get update && apt-get install -y --no-install-recommends chromium fonts-liberation fonts-noto-color-emoji \
+ && rm -rf /var/lib/apt/lists/* \
+ && echo 'export CHROMIUM_FLAGS="$CHROMIUM_FLAGS --no-sandbox --disable-dev-shm-usage"' > /etc/chromium.d/starnet-docker
+ENV STARNET_CHROME=/usr/bin/chromium
 WORKDIR /app
 RUN chown node:node /app
 USER node
