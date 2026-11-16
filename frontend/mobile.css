@@ -11,3 +11,49 @@ canvas { touch-action: none; -webkit-user-select: none; user-select: none; -webk
 @media (pointer: coarse) {
   input, textarea, select { font-size: max(16px, 1em) !important; }
 }
+
+/* ---- BUILD MODE on a phone -------------------------------------------------
+   Selecting a placed prop or room docks its card ABOVE the library. On a phone the
+   bottom sheet is only 64% of the glass, so the card plus the search/category rows
+   squeezed the prop grid to ~0px: nothing left to scroll. With a selection the whole
+   sheet scrolls as one, the library keeps a full sheet's height under the card, and
+   the card drops the keyboard hints a phone can't use. */
+@media (max-width: 700px) {
+  .refit-overlay.has-selection[data-tool="select"] .refit-dock { overflow-y: auto; overscroll-behavior: contain; }
+  .refit-overlay.has-selection[data-tool="select"] .refit-option-section { flex: 0 0 auto; height: 100%; min-height: 300px; }
+  .refit-overlay .refit-selection { padding: 6px 10px; gap: 6px; }
+  .refit-overlay .refit-selection .refit-sel-act kbd { display: none; }
+  .refit-overlay .refit-selection-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  .refit-overlay .refit-selection .refit-sel-act { justify-content: center; min-height: 34px; padding: 4px; }
+}
+
+/* ---- COMMS FULL SCREEN on a phone -------------------------------------------
+   The stacked phone layout leaves the transcript a few lines tall. Tapping into the
+   message box (or the ⤢ key in the COMMS header, app/mobile.js) lifts COMMS over the
+   whole screen; the ⤡ key folds it back. --sn-vvh / --sn-vvt follow the visual
+   viewport so the composer rides above the on-screen keyboard; both are in the body's
+   zoomed px (TEXT SIZE is a body zoom, hence --sn-unzoom). */
+#comms-full { display: none; }
+@media (max-width: 760px) {
+  #comms-full {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 32px; height: 28px; margin-left: 6px; padding: 0 6px;
+    font: inherit; font-size: 15px; line-height: 1; cursor: pointer;
+    color: var(--ph-bright); background: transparent;
+    border: 1px solid var(--ph-dim); border-radius: 6px;
+  }
+  body.sn-comms-full #chat-panel {
+    position: fixed !important; left: 0 !important; right: 0 !important;
+    top: var(--sn-vvt, 0px) !important; bottom: auto !important;
+    width: auto !important; max-width: none !important; min-width: 0 !important;
+    height: var(--sn-vvh, calc(100dvh * var(--sn-unzoom, 1))) !important; max-height: none !important;
+    margin: 0 !important; z-index: 950 !important;
+    display: flex !important; flex-direction: column !important;
+    background: rgb(12, 7, 4) !important;
+    border-radius: 0 !important;
+  }
+  body.sn-comms-full #chat-panel #chat-log { flex: 1 1 auto !important; min-height: 0 !important; max-height: none !important; }
+  body.sn-comms-full #comms-resizer { display: none !important; }
+  /* the floating STARNET mark is a body-level fixed layer above the game screen: it would print over the COMMS header */
+  body.sn-comms-full #logo { visibility: hidden; }
+}
