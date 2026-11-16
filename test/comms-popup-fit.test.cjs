@@ -52,5 +52,9 @@ assert.match(app,/\.chat-slash \{[^}]*max-height: min\(244px, var\(--comms-fit/,
 assert.match(glass,/body\.glass-demo #model-dock \{[^}]*max-height: min\(65vh,480px,var\(--comms-fit[^}]*background: var\(--gd-pop\)/,'glass picker: fitted + opaque');
 assert.match(glass,/\.gd-agent-menu \{[^}]*max-height: min\(260px,var\(--comms-fit/,'agent menu');
 assert.match(glass,/#chat-panel\.comms-pop-over #chat-inputrow \{ z-index: 7; \}/,'lifted row clears the header z 6');
+// 11-16 phone shot: the lifted row's z 7 out-ranked app.css's offer lift, so the picker painted UNDER the first-task offer (z 30).
+// The offer lift must come AFTER the pop-over rule at equal specificity so it wins whenever both apply.
+const popAt=glass.indexOf('#chat-panel.comms-pop-over #chat-inputrow { z-index: 7; }'),offerAt=glass.indexOf('body.glass-demo #chat-panel.fnv-offer-host #chat-inputrow { z-index: 31; }');
+assert(offerAt>popAt&&popAt>=0,'glass composer rides over the first-run offer panel even when the picker lifts it');
 assert.doesNotMatch(app,/\.model-dock \{ position: fixed/,'a fixed picker resolves against the blurred panel, not the composer');
 console.log('comms-popup-fit: popups fit under the header, a tight riser covers it cleanly, menu stops at the composer');
