@@ -70,6 +70,8 @@ function makeTriggerRunner(deps) {
   const planOf = typeof d.plan === 'function' ? d.plan : function () { return null; };
   const heldOf = typeof d.held === 'function' ? d.held : function () { return null; };
   const seenStore = d.seen || { load: function () { return {}; }, save: function () {} };
+  // starnet-berries: optional "a trigger job finished" hook (the hosted fork pings Telegram). Fire-and-forget; never affects the job.
+  const onFinished = typeof d.onFinished === 'function' ? d.onFinished : null;
 
   let records = T.normalizeAll(d.load()).triggers;
   let seen = (function () { try { const s = seenStore.load(); return (s && typeof s === 'object') ? s : {}; } catch (e) { warn('[triggers] fired-file record unreadable: ' + ((e && e.message) || e)); return {}; } })();
@@ -375,6 +377,8 @@ function makeTriggerRunner(deps) {
       // (GitHub #122, additive) reached the OUTBOX, but a review loop used all its passes without approving it — said, never read as clean
       if (completed && lo && lo.unapproved) outcome.unapproved = String(lo.unapproved).slice(0, 300);
       patch(t.id, () => (err ? { lastOutcome: outcome, lastError: err.slice(0, 400), lastErrorAt: now() } : { lastOutcome: outcome, lastError: null, lastErrorAt: null }));
+      // starnet-berries: tell the host a trigger job settled (after its record is written)
+      if (onFinished) { try { onFinished({ id: t.id, kind: t.kind, name: t.name, lineId: t.lineId }, outcome, err); } catch (e) { warn('[triggers] onFinished failed: ' + ((e && e.message) || e)); } }
       return outcome;
     };
     // The entry retains its original floor/trigger projection until the durable job can finish.

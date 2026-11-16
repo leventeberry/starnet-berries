@@ -14971,8 +14971,36 @@ const triggerRunner = makeTriggerRunner({
   label: (agentId) => stepTestLabel(agentId),
   folderConflict: (p) => { const root = triggerLineRoots().find(r => p && triggerFolderPolicy.inside(p, r)); return root ? lineOutputError(root) : null; },
   now: () => Date.now(), newId: () => crypto.randomUUID(),
-  warn: (m) => console.warn(m)
+  warn: (m) => console.warn(m),
+  onFinished: (t, outcome, err) => notifyTriggerFinished(t, outcome, err)   // starnet-berries
 });
+/* starnet-berries: WEBHOOK JOB PINGS. When a WEBHOOK trigger's job settles, send one line to every chat the owner opened
+   with the station (one per chat id), behind the SAME opt-in as routine pings (channelSecrets.notifyAutonomous, default
+   off). The line names the trigger, the outcome and where to read the result; it never carries the webhook body. */
+function notifyTriggerFinished(t, outcome, err) {
+  if (!t || t.kind !== 'webhook') return;
+  if (!(channelSecrets && channelSecrets.notifyAutonomous)) return;
+  let map;
+  try { map = channelStore.loadChatMap(); } catch (_) { return; }
+  const chats = (map && map.chats) || {}, seen = new Set();
+  const o = outcome || {};
+  const name = String(t.name || 'a webhook').slice(0, 60);
+  const usd = typeof o.usd === 'number' && o.usd > 0 ? ' ($' + o.usd.toFixed(2) + ')' : '';
+  const text = o.ok
+    ? 'New work from webhook "' + name + '" is ready' + usd + (o.unapproved ? ' (not approved by its review step)' : '') + '. Open WORKFLOWS › LAST JOBS to read it.'
+    : o.stopped ? 'The job from webhook "' + name + '" was stopped.'
+    : 'The job from webhook "' + name + '" did not finish' + (err ? ': ' + String(err).slice(0, 160) : '.') + ' See WORKFLOWS › LAST JOBS.';
+  for (const key of Object.keys(chats)) {
+    const rec = chats[key];
+    if (!rec) continue;
+    const chatId = String(rec.chatId || key), channel = rec.channel || 'telegram';
+    if (seen.has(chatId)) continue;
+    seen.add(chatId);
+    channelOutbound.send(key, redact(text), { durable: false, reason: 'notify', agentId: o.agentId || undefined })
+      .then(r => { if (r && r.ok === false) console.warn('[triggers] webhook ping not sent [' + channel + ']:', r.error); })
+      .catch(e => console.warn('[triggers] webhook ping failed:', (e && e.message) || e));
+  }
+}
 /* SEND TO (2026-10-10) — sidecar/routing/handoff-runner.js. A job that leaves its line clean at an OUTBOX that sends on starts
    the target line's OWN job through the trigger hub, scoped to the TARGET line (its INBOX picks the dock, its crew runs it, its
    stage / $ / day budget governs it). Refusals (E-STOP, the target gone / uncrewed / over its day cap, a circle, a 4th hand-off,
@@ -15046,7 +15074,8 @@ const lineResume = LineResume.makeLineResume({
 });
 let triggerPollTimer = setInterval(() => { triggerRunner.tickFolders().catch(swallow('triggers.folders')); }, triggerPollMs);
 triggerPollTimer.unref();
-const triggerHookUrl = (id) => 'http://127.0.0.1:' + PORT + '/api/hooks/' + id;
+// starnet-berries: the address an outside caller uses (STARNET_PUBLIC_URL on the hosted VPS; loopback otherwise)
+const triggerHookUrl = (id) => PUBLIC_BASE + '/api/hooks/' + id;
 function triggerView(v) {
   if (!v) return v;
   const out = Object.assign({}, v);   // blockedBy is the runner's live answer (liveView)
@@ -15116,7 +15145,7 @@ async function startLineFor(spec) {
 function handleTriggersList(req, res) {
   triggerJson(res, 200, {
     ok: true, kinds: LineTriggers.KINDS.slice(), email: { available: false, reason: 'StarNet has no mail connector yet' },
-    hookBase: 'http://127.0.0.1:' + PORT + '/api/hooks/', pollMs: triggerPollMs, settleMs: triggerSettleMs,
+    hookBase: PUBLIC_BASE + '/api/hooks/', pollMs: triggerPollMs, settleMs: triggerSettleMs,
     maxPerHourCeiling: LineTriggers.MAX_PER_HOUR_CEILING, triggers: triggerRunner.list().map(triggerView)
   });
 }

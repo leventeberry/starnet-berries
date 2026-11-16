@@ -55,7 +55,8 @@ A.ok(/startHead\('A schedule', !S\.cron \? 'reading…' : routines\.length \? ''
   'a schedule and a channel are blocks whose header says what they have and carries their add key');
 const lts = at(panel, '  function ltSectionHtml() {', '  const ltSay');
 A.ok(/startHead\('A file lands in a folder', ltNote\('folder'\), 'fo',/.test(lts) && /startHead\('A webhook is called', ltNote\('webhook'\), 'wh',/.test(lts), '…and so are a watched folder and a webhook');
-A.ok(/\(hooked \? '<p class="wf-help dim">A webhook address lives on this computer/.test(lts), 'where a webhook can be reached from is said where a webhook IS (one on the line, or one being made)');
+// starnet-berries: a hosted (public hookBase) wording comes first
+A.ok(/\(hooked \? [\s\S]{0,700}'<p class="wf-help dim">A webhook address lives on this computer/.test(lts), 'where a webhook can be reached from is said where a webhook IS (one on the line, or one being made)');
 A.ok(/return S\.lt \? ltMine\(\)\.filter\(t => t\.kind === kind\)\.map\(ltRowHtml\)\.join\(''\) : '';/.test(panel), 'an empty list shows nothing: its block\'s header says "none yet"');
 A.ok(/noteEl\.textContent = ltNote\(rowKind\);/.test(at(panel, '  function ltPatch() {', '  // the one thing that moves')), '…and the 5 s re-read keeps that header note true');
 A.ok(/const startHead = \(name, note, id, keys\) => '<div class="wf-start"><div class="wf-start-h"><h4>' \+ name \+ '<\/h4><span class="wf-start-n" id="wf-start-n-' \+ id \+ '">' \+ esc\(note\) \+ '<\/span>'/.test(panel), 'one builder makes every block\'s header row');

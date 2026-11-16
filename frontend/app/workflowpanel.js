@@ -1326,7 +1326,10 @@ const WorkflowPanel = (() => {
       + '<div class="trg-list" id="lt-folders">' + rows('folder') + '</div>' + (F && F.kind === 'folder' ? ltFormHtml('folder') : '') + '</div>'
       + startHead('A webhook is called', ltNote('webhook'), 'wh', F && F.kind === 'webhook' ? '' : '<button type="button" class="bb sm" id="lt-new-hook">⊕ ADD A WEBHOOK</button>')
       + '<div class="trg-list" id="lt-hooks">' + rows('webhook') + '</div>' + (F && F.kind === 'webhook' ? ltFormHtml('webhook') : '')
-      + (hooked ? '<p class="wf-help dim">A webhook address lives on this computer (127.0.0.1' + (port ? ':' + port : '') + '). Nothing outside this machine can reach it unless you set up a tunnel yourself (for example cloudflared or ngrok) pointed at that port.</p>' : '')
+      // starnet-berries: a hosted station's hookBase is its public address; say where it is reachable from instead of 127.0.0.1
+      + (hooked ? (S.lt && /^https?:\/\/(127\.0\.0\.1|localhost)[:/]/.test(S.lt.hookBase || '') === false && S.lt.hookBase
+        ? '<p class="wf-help dim">This webhook address is on this station\u2019s public site. Outside callers reach it only if the server lets <code>/api/hooks/</code> past its sign-in page (see the deploy notes). The secret is the only lock on it, so keep it on a server, never in a web page.</p>'
+        : '<p class="wf-help dim">A webhook address lives on this computer (127.0.0.1' + (port ? ':' + port : '') + '). Nothing outside this machine can reach it unless you set up a tunnel yourself (for example cloudflared or ngrok) pointed at that port.</p>') : '')
       + '</div>'
       + '<div class="wf-help trg-msg' + (S.ltMsg && S.ltMsg.bad ? ' bad' : '') + '" id="lt-msg"' + (S.ltMsg ? '' : ' hidden') + '>' + esc(S.ltMsg ? S.ltMsg.t : '') + '</div>';
   }

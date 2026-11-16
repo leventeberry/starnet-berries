@@ -32,6 +32,10 @@ browser-mode constraints). Upstream's own docs are in `docs/`.
   `windows/trophies.js`), the `figma` row in `sidecar/mcp/catalog.js`, and `starnet-berries`-marked lines in
   `sidecar/index.js` (Figma env client, refreshEndpoint, /api/figma/embed, CSP
   frame-src) and `sidecar/mcp/catalog.js`/`frontend/app/places.js`. See `deploy/README.md` § Figma.
+- Public webhooks: `starnet-berries`-marked lines in `sidecar/index.js` (`triggerHookUrl`/`hookBase` use
+  `PUBLIC_BASE`; `notifyTriggerFinished` pings chats when a webhook job settles), the `onFinished` dep in
+  `sidecar/routing/trigger-runner.js`, and the hosted help text in `frontend/app/workflowpanel.js`. See
+  `deploy/README.md` § Public webhooks.
 
 ## Browser-mode notes
 - The sidecar only serves loopback `Host`s and only gives its API token to a same-uid

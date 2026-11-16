@@ -67,3 +67,40 @@ StarNet uses the owner's own Figma OAuth app (Figma refuses StarNet's automatic 
 - Agents: CONNECT › ABILITIES → Figma → sign in. Tools: `sidecar/mcp/transport.figma.js`.
   Viewer: the FIGMA window (`frontend/app/windows/figma.js`) embeds any figma.com link. It uses only the client ID.
 - The redirect uses `STARNET_PUBLIC_URL` (set in `deploy/Dockerfile`).
+
+## Public webhooks (e.g. a portfolio contact form)
+A work line can start from a webhook: `POST /api/hooks/trg_<id>` with the trigger's secret
+(`Authorization: Bearer <secret>`). The sidecar answers that one path before its host/token gate, and nginx passes
+it through, so the only thing blocking outside callers is Authelia. Open **only that path** and keep the rest behind 2FA.
+
+1. **Authelia** (`configuration.yml` on the VPS). Put this rule FIRST under `access_control.rules`, above the rule that
+   protects `starnet.leventeberry.me` (rules match top-down):
+   ```yaml
+   - domain: 'starnet.leventeberry.me'
+     methods: ['POST']
+     resources:
+       - '^/api/hooks/trg_[a-z0-9]{8,24}([?].*)?$'
+     policy: 'bypass'
+   ```
+   Restart Authelia. Anything else (GET, other `/api` paths, the UI) still needs 2FA.
+2. **Traefik rate limit (recommended).** StarNet already limits each trigger (default 20/hour) and each line's daily $,
+   but cap raw traffic before it reaches the box. Add a `rateLimit` middleware (e.g. `average: 10`, `period: 1m`,
+   `burst: 5`) to the StarNet router, or to a separate higher-priority router for
+   ``PathRegexp(`^/api/hooks/trg_`)`` that keeps the Authelia middleware off only that path.
+3. **Test from outside the server** (replace the id with one from WORKFLOWS › INBOX › "A webhook is called"):
+   ```sh
+   # StarNet itself answers (401 from the sidecar, NOT an Authelia redirect/login page):
+   curl -si -X POST https://starnet.leventeberry.me/api/hooks/trg_xxxxxxxx -H 'Authorization: Bearer wrong' | head -1
+   # Everything else is still gated (expect Authelia's 302/401):
+   curl -si https://starnet.leventeberry.me/api/hooks/trg_xxxxxxxx | head -1
+   curl -si -X POST https://starnet.leventeberry.me/api/routing/triggers | head -1
+   # A real call (expect 202 with a jobId):
+   curl -si -X POST https://starnet.leventeberry.me/api/hooks/trg_xxxxxxxx \
+     -H "Authorization: Bearer $HOOK_SECRET" -H 'Content-Type: application/json' \
+     -H 'Idempotency-Key: test-1' -d '{"name":"Test","message":"hello"}'
+   ```
+   If the first command returns the Authelia login page, the rule is below another rule or the regex didn't match.
+
+Keep the secret on a server (e.g. a Vercel env var read by a serverless function), never in a web page.
+The webhook URL StarNet shows uses `STARNET_PUBLIC_URL`. To get a Telegram ping when a webhook job finishes, turn on
+CHANNELS › "Send completed-work updates" (the same opt-in routines use). Details: `docs/LINE_WEBHOOKS.md`.
