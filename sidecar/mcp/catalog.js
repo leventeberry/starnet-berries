@@ -260,6 +260,20 @@
       url: 'https://mcp.monday.com/mcp', official: true, homepage: 'https://monday.com',
       blurb: 'Create and update monday.com boards and items. Needs monday.com sign-in (OAuth).' },
     // Design
+    /* starnet-berries: Figma refuses dynamic registration (see WAVE 2/4 notes), so this row uses the station's own
+       PRE-REGISTERED Figma OAuth app (STARNET_FIGMA_OAUTH_CLIENT_ID/_SECRET) and the local REST adapter
+       mcp/transport.figma.js. Figma wants the app credentials as HTTP Basic and refreshes on its own endpoint. */
+    { id: 'figma', name: 'Figma', category: 'Design', authType: 'oauth', transport: 'http',
+      url: 'https://api.figma.com/v1#starnet-figma', figmaApi: true, official: false, homepage: 'https://figma.com',
+      aliases: ['figma', 'figjam', 'design', 'designs', 'mockup', 'prototype', 'ui design'],
+      staticOauth: {
+        authorizationServer: 'https://www.figma.com',
+        authorizationEndpoint: 'https://www.figma.com/oauth',
+        tokenEndpoint: 'https://api.figma.com/v1/oauth/token',
+        refreshEndpoint: 'https://api.figma.com/v1/oauth/refresh',
+        scopes: ['current_user:read', 'file_content:read', 'file_metadata:read', 'file_versions:read', 'file_comments:read', 'file_comments:write', 'library_content:read']
+      },
+      blurb: 'Read Figma files, render frames as images, and read or post comments. Sign in with Figma to connect your account.' },
     { id: 'canva', name: 'Canva', category: 'Design', authType: 'oauth', transport: 'http',
       url: 'https://mcp.canva.com/mcp', official: true, homepage: 'https://canva.com',
       blurb: 'Generate and manage Canva designs. Needs Canva sign-in (OAuth).' },
@@ -434,7 +448,7 @@
   function cloneEntry(e) {
     return {
       id: e.id, name: e.name, category: e.category, authType: e.authType, transport: e.transport,
-      url: e.url || '', googleApi: !!e.googleApi, deviceFlow: !!e.deviceFlow, official: !!e.official, homepage: e.homepage || '', blurb: e.blurb || '',
+      url: e.url || '', googleApi: !!e.googleApi, figmaApi: !!e.figmaApi, deviceFlow: !!e.deviceFlow, official: !!e.official, homepage: e.homepage || '', blurb: e.blurb || '',
       via: e.via || '', keyHeader: e.keyHeader || '', local: !!e.local, appPassword: !!e.appPassword, installable: isInstallable(e),
       // keyAuthRetired: this row USED to take a pasted key; saved key rows may switch to its sign-in (oauth-target.js).
       // Emitted only where true so 70+ other cards carry no extra bytes.
@@ -444,6 +458,7 @@
         authorizationServer: e.staticOauth.authorizationServer,
         authorizationEndpoint: e.staticOauth.authorizationEndpoint,
         tokenEndpoint: e.staticOauth.tokenEndpoint,
+        refreshEndpoint: e.staticOauth.refreshEndpoint || '',   // starnet-berries: Figma refreshes on its own endpoint
         scopes: (e.staticOauth.scopes || []).slice(),
         extraAuthParams: Object.assign({}, e.staticOauth.extraAuthParams || {}),
         clientSecretRequired: !!e.staticOauth.clientSecretRequired,

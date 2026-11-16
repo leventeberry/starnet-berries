@@ -55,3 +55,15 @@ CLAUDE CODE provider runs it inside the container. To sign in, pick CLAUDE CODE,
 SIGN IN WITH CLAUDE, open the sign-in page, sign in on claude.com and paste the code it shows
 back into StarNet. The sign-in is stored in `/home/node/.claude` on the `starnet_home` volume.
 The CLI's self-updater is off; bump `CLAUDE_CODE_VERSION` to update it.
+
+## Figma (agent tools + FIGMA viewer)
+StarNet uses the owner's own Figma OAuth app (Figma refuses StarNet's automatic app registration).
+- In the Figma app's settings, add the redirect URL
+  `https://starnet.leventeberry.me/api/connectors/oauth/callback`, and under **Embed API** add the embed origin
+  `https://starnet.leventeberry.me`.
+- On the server, put the app credentials in `/opt/starnet/figma.env` (`chmod 600`, never committed):
+  `STARNET_FIGMA_OAUTH_CLIENT_ID=...` and `STARNET_FIGMA_OAUTH_CLIENT_SECRET=...`, then
+  `docker compose -p starnet up -d app` from `/opt/starnet` to load them.
+- Agents: CONNECT › ABILITIES → Figma → sign in. Tools: `sidecar/mcp/transport.figma.js`.
+  Viewer: the FIGMA window (`frontend/app/windows/figma.js`) embeds any figma.com link. It uses only the client ID.
+- The redirect uses `STARNET_PUBLIC_URL` (set in `deploy/Dockerfile`).

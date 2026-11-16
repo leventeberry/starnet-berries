@@ -12,6 +12,11 @@ services:
   app:
     image: ${STARNET_IMAGE:?set STARNET_IMAGE in .env}
     restart: unless-stopped
+    # Secrets the owner creates on the server (never committed), e.g. STARNET_FIGMA_OAUTH_CLIENT_ID/_SECRET.
+    # Optional: the stack still starts without it.
+    env_file:
+      - path: ./figma.env
+        required: false
     init: true
     volumes:
       - starnet_home:/home/node

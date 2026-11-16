@@ -352,6 +352,7 @@ const { makeFolderWatcher, makeFolderPolicy, lineOutputError } = require('./rout
 const { makeConnectorManager } = require('./mcp/manager.js');
 const { makeHttpTransport } = require('./mcp/transport.http.js');
 const googleApiTransport = require('./mcp/transport.google.js');
+const figmaApiTransport = require('./mcp/transport.figma.js');   // starnet-berries
 const gmailImapTransport = require('./mcp/transport.gmail-imap.js');   // Gmail via app password (IMAP/SMTP), no OAuth
 const googleClientConfig = require('./mcp/google-client.js');
 const { makeStdioTransport } = require('./mcp/transport.stdio.js');
@@ -7025,7 +7026,17 @@ const GOOGLE_OAUTH_ENV_CLIENT = (() => {
     ? { clientId, clientSecret, tokenEndpointAuthMethod: 'client_secret_post', at: 0, fromEnv: true }
     : null;
 })();
+// starnet-berries: the station's pre-registered Figma OAuth app (catalog row `figma`). Figma takes the app
+// credentials as HTTP Basic. The client ID alone is public: the FIGMA viewer's Embed API uses it too.
+const FIGMA_OAUTH_AS = 'https://www.figma.com';
+const FIGMA_OAUTH_ENV_CLIENT = (() => {
+  const clientId = String(process.env.STARNET_FIGMA_OAUTH_CLIENT_ID || '').trim();
+  const clientSecret = String(process.env.STARNET_FIGMA_OAUTH_CLIENT_SECRET || '').trim();
+  if ((clientId || clientSecret) && !(clientId && clientSecret)) console.warn('[connectors] Figma OAuth env client is incomplete; both client id and secret are required');
+  return clientId && clientSecret ? { clientId, clientSecret, tokenEndpointAuthMethod: 'client_secret_basic', at: 0, fromEnv: true } : null;
+})();
 function connectorOauthClient(authServer) {
+  if (authServer === FIGMA_OAUTH_AS) return FIGMA_OAUTH_ENV_CLIENT || {};
   if (authServer === GOOGLE_OAUTH_AS && GOOGLE_DESKTOP_CLIENT) return GOOGLE_DESKTOP_CLIENT;
   const saved = connectorOauth.clients[String(authServer || '')] || {};
   if (saved.clientId) return saved;
@@ -7249,6 +7260,7 @@ const connectors = makeConnectorManager({
     if (connectorStorageError) throw new Error(connectorStorageError);
     if (googleConnectorDeferred(cfg)) throw new Error(googleDeferredMessage(cfg));
     if (cfg && cfg.transport === 'http' && googleApiTransport.productForUrl(cfg.url)) return googleApiTransport.makeGoogleTransport(cfg);
+    if (cfg && cfg.transport === 'http' && figmaApiTransport.isFigmaUrl(cfg.url)) return figmaApiTransport.makeFigmaTransport(cfg);   // starnet-berries
     if (cfg && cfg.transport === 'http' && gmailImapTransport.productForUrl(cfg.url)) return gmailImapTransport.makeGmailImapTransport(Object.assign({}, cfg, { now: () => Date.now() }));
     if (!cfg || cfg.transport !== 'stdio') return makeHttpTransport(cfg);
     const aid = String(cfg.agentId || '');
@@ -7407,7 +7419,7 @@ async function ensureConnectorOauthToken(id, force) {
       const startedCfg = connectorConfigs.find(c => c && c.id === id);
       const startedGrant = JSON.stringify(cur);
       try {
-        const nt = await mcpOauth.refreshTokens({ fetchImpl: connectorOauthFetch, tokenEndpoint: cur.tokenEndpoint, refreshToken: cur.refreshToken,
+        const nt = await mcpOauth.refreshTokens({ fetchImpl: connectorOauthFetch, tokenEndpoint: cur.refreshEndpoint || cur.tokenEndpoint, refreshToken: cur.refreshToken,
           clientId: cur.clientId, clientSecret: cur.clientSecret, tokenEndpointAuthMethod: cur.tokenEndpointAuthMethod,
           resource: cur.resource, now: Date.now(), timeoutMs: CONNECTOR_OAUTH_LEG_MS });
         if (generation !== connectorResetGeneration) return { token: '', refreshError: null };
@@ -13478,6 +13490,9 @@ const ROUTES = [
   { m: 'POST', exact: '/api/connectors/oauth/start', h: handleConnectorOauthStart },
   { m: 'POST', exact: '/api/connectors/oauth/device/poll', h: handleConnectorDevicePoll },
   { m: 'POST', exact: '/api/connectors/oauth/client', h: handleConnectorOauthClient },
+  // starnet-berries: the FIGMA viewer's Embed API config. Only the public client ID crosses the wire, never the secret.
+  { m: 'GET', exact: '/api/figma/embed', h: (req, res) => { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ clientId: (FIGMA_OAUTH_ENV_CLIENT && FIGMA_OAUTH_ENV_CLIENT.clientId) || String(process.env.STARNET_FIGMA_OAUTH_CLIENT_ID || '').trim(), embedHost: 'starnet' })); } },
   { m: 'POST', exact: '/api/connectors/oauth/cancel', h: handleConnectorOauthCancel },
   { m: 'POST', exact: '/api/connectors/storage/start-fresh', h: handleConnectorStorageStartFresh },
   { m: 'GET', prefix: '/api/connectors/oauth/callback', h: handleConnectorOauthCallback },
@@ -17015,10 +17030,15 @@ async function handleServiceKeyRemove(req, res) {
    (2026-09-28) had the agent promise "sign in with Google, no setup" beside a disabled GOOGLE SIGN-IN button.
    IDEMPOTENT: browse() lists one entry object under both `connectors` and its group, so a second pass must not
    prefix the early-access sentence again (the card printed it twice). */
+const FIGMA_SIGNIN_UNAVAILABLE = 'Figma sign-in is not set up on this server: set STARNET_FIGMA_OAUTH_CLIENT_ID and STARNET_FIGMA_OAUTH_CLIENT_SECRET.';   // starnet-berries
 const EARLY_ACCESS_BLURB = 'Early access — Google has not finished verifying StarNet yet. When Google says the app isn’t verified, choose Advanced, then Go to StarNet. ';
 function annotateConnectorAvailability(e) {
   if (!e) return e;
   if (e.staticOauth) e.needsClient = !connectorOauthClient(e.staticOauth.authorizationServer).clientId;
+  if (e.figmaApi) {   // starnet-berries
+    e.signInAvailable = !connectorStorageError && !e.needsClient;
+    if (!e.signInAvailable) e.signInMessage = connectorStorageError || FIGMA_SIGNIN_UNAVAILABLE;
+  }
   if (e.googleApi) {
     e.releaseDeferred = googleConnectorDeferred(e);
     // a restricted service Google blocks outright: no SIGN IN, the card names the connection that works instead
@@ -17336,6 +17356,7 @@ async function handleConnectorOauthStart(req, res) {
       const cached = connectorOauthClient(as);
       if (!cached.clientId) {
         completed = true;
+        if (entry.figmaApi) return json(503, { error: FIGMA_SIGNIN_UNAVAILABLE, code: 'figma_signin_unavailable', signInAvailable: false });   // starnet-berries
         return json(503, { error: googleClientConfig.UNAVAILABLE, code: 'google_signin_unavailable', signInAvailable: false });
       }
       const method = cached.tokenEndpointAuthMethod || (cached.clientSecret ? 'client_secret_post' : 'none');
@@ -17346,7 +17367,7 @@ async function handleConnectorOauthStart(req, res) {
       for (const [key, p] of connectorOauthPending) if (p.id === entry.id) connectorOauthPending.delete(key);
       connectorOauthPending.set(state, { id: entry.id, attemptId, generation, label: entry.name, verifier: verifier,
         clientId: cached.clientId, clientSecret: cached.clientSecret || '', tokenEndpointAuthMethod: method,
-        tokenEndpoint: so.tokenEndpoint, authorizationServer: as, resource: '',
+        tokenEndpoint: so.tokenEndpoint, refreshEndpoint: so.refreshEndpoint || '', authorizationServer: as, resource: '',
         serverUrl: entry.url, redirectUri: CONNECTOR_OAUTH_REDIRECT, at: Date.now(),
         googleApi: !!entry.googleApi, requiredScopes: so.scopes,
         originalConfig: JSON.stringify(connectorConfigs.find(c => c && c.id === entry.id) || null),
@@ -17473,7 +17494,7 @@ async function handleConnectorDevicePoll(req, res) {
    runs the real callback with that query, so the CSRF `state` is still the fence (an unknown state finishes nothing). */
 async function handleConnectorOauthPaste(req, res) {
   let body = {};
-  try { body = JSON.parse(await readBody(req, 8192)) || {}; } catch (_) {}
+  try { body = JSON.parse(await readBody(req, 8192)) || {}; } catch (e) { failNote('connector.oauth.paste-body', e); }   // starnet-berries: the fail-open ratchet; a bad body falls through to the 400 below
   const send = (code, o) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
   let u;
   try { u = new URL(String((body && body.url) || '').trim()); } catch (_) { return send(400, { error: 'paste the full address of the page you landed on' }); }
@@ -17547,6 +17568,7 @@ async function handleConnectorOauthCallback(req, res) {
       scope: tok.scope, tokenType: tok.tokenType, clientId: pending.clientId, clientSecret: pending.clientSecret,
       tokenEndpointAuthMethod: pending.tokenEndpointAuthMethod, tokenEndpoint: pending.tokenEndpoint,
       authorizationServer: pending.authorizationServer, resource: pending.resource, at: Date.now() };
+    if (pending.refreshEndpoint) oauthEntry.refreshEndpoint = pending.refreshEndpoint;   // starnet-berries: Figma refreshes on its own endpoint
     if (pending.id === 'google-files' && !googleClientConfig.fileScopeOnly(tok.scope)) return page('Google permissions changed', 'This connection accepts only selected-file access. Your previous connection was kept.', false);
     if (pending.id === 'google-files') {
       const picked = String(q.get('picked_file_ids') || '').split(',');
@@ -32020,7 +32042,7 @@ async function serveStatic(req, res) {
        policy, so one missed escape anywhere (a session title, a mail subject, a skill name) would have run with full
        API reach. Mirrors the desktop CSP's script rules: same-origin files, the nonce'd boot script, no inline handlers,
        no plugins, no <base> hijack. Other static files keep the framing-only policy. */
-    const csp = "frame-ancestors 'self'; frame-src 'self' http://127.0.0.1:" + PORT + ' http://localhost:' + PORT +
+    const csp = "frame-ancestors 'self'; frame-src 'self' http://127.0.0.1:" + PORT + ' http://localhost:' + PORT + ' https://embed.figma.com' +   // starnet-berries: FIGMA viewer
       (scriptNonce ? "; script-src 'self' 'nonce-" + scriptNonce + "'; object-src 'none'; base-uri 'none'; worker-src 'self' blob:" : '');
     res.writeHead(200, { 'Content-Type': MIME[path.extname(abs).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store',
       'X-Frame-Options': 'SAMEORIGIN', 'Content-Security-Policy': csp, 'X-Content-Type-Options': 'nosniff' });
