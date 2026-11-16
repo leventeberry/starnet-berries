@@ -546,6 +546,10 @@ const SPECIALIST_CLASSES = (sharedSpecialties.BUILTINS || []).map(s => ({ id: s.
 function ENV(suffix) { const k = 'STARNET_' + suffix; return (k in process.env) ? process.env[k] : process.env['SKYNET_' + suffix]; }
 
 const PORT = Number(ENV('PORT') || process.env.PORT) || 8787;
+// starnet-berries: the address the Commander's BROWSER reaches this station at. OAuth providers (MCP connectors such
+// as Vercel, Spotify) send the browser back to a redirect URI built from it; on the hosted VPS the loopback default is
+// the server's own loopback, which the user's browser cannot reach. Set STARNET_PUBLIC_URL (deploy/Dockerfile does).
+const PUBLIC_BASE = String(ENV('PUBLIC_URL') || '').trim().replace(/\/+$/, '') || ('http://127.0.0.1:' + PORT);
 const API_TOKEN = String(ENV('API_TOKEN') || crypto.randomBytes(32).toString('hex'));
 // DEV fast-path (the `npm run dev:seed` launcher sets this): when on, the served index.html carries a small
 // boot payload (window.__STARNET_DEV__ = {model, prov}) so a fresh browser origin auto-resumes the server-
@@ -2719,7 +2723,7 @@ async function dirStatAllowed(abs) {
 // SPOTIFY (the JUKEBOX skill): ONE durable OAuth session for the station, persisted OUTSIDE any agent jail
 // (WORKSPACES/.secrets/spotify.json — not reachable via /api/file). PKCE flow → client_id only, never a secret.
 // The redirect URI is fixed + must be registered verbatim in the user's Spotify app (loopback IP, not localhost).
-const SPOTIFY_REDIRECT = 'http://127.0.0.1:' + PORT + '/api/spotify/callback';
+const SPOTIFY_REDIRECT = PUBLIC_BASE + '/api/spotify/callback';   // starnet-berries: PUBLIC_BASE
 const spotifyStore = makeSpotifyStore({ fsp, pathMod: path, dir: path.join(WORKSPACES, '.secrets'), fetchImpl: globalThis.fetch, now: () => Date.now() });
 // in-flight PKCE verifiers keyed by the OAuth `state` (a round-trip completes in seconds). Pruned on each start.
 const spotifyPending = new Map();
@@ -7296,7 +7300,11 @@ if (require.main === module) {
    tokens and dynamically-registered client credentials live in a PROTECTED sibling file, never on the bus, never
    returned by /api/connectors. The access token lives ONLY here — an oauth connector's persisted config carries
    `oauth:true` but no token, so a stale/expired token is never persisted or reused. ---- */
-const CONNECTOR_OAUTH_REDIRECT = 'http://127.0.0.1:' + PORT + '/api/connectors/oauth/callback';
+const CONNECTOR_OAUTH_REDIRECT = PUBLIC_BASE + '/api/connectors/oauth/callback';   // starnet-berries: PUBLIC_BASE
+// starnet-berries: some servers (Vercel) only register LOOPBACK redirect URIs for dynamically-registered clients. The hosted
+// station then falls back to this one; the provider sends the browser to a page that can't load, and the Commander pastes
+// that page's address into StarNet (POST /api/connectors/oauth/paste), which finishes the sign-in server-side.
+const CONNECTOR_OAUTH_LOOPBACK_REDIRECT = 'http://127.0.0.1:' + PORT + '/api/connectors/oauth/callback';
 // EVERY connector-OAuth leg (probe, metadata, DCR, token exchange, refresh) and a custom server's authorization endpoint
 // go through sidecar/mcp/oauth-fetch.js, which owns the outbound boundary's connectorOauth row: a public https host with
 // no credentials, one DNS answer per leg, the socket pinned to every address that answer validated.
@@ -13473,6 +13481,7 @@ const ROUTES = [
   { m: 'POST', exact: '/api/connectors/oauth/cancel', h: handleConnectorOauthCancel },
   { m: 'POST', exact: '/api/connectors/storage/start-fresh', h: handleConnectorStorageStartFresh },
   { m: 'GET', prefix: '/api/connectors/oauth/callback', h: handleConnectorOauthCallback },
+  { m: 'POST', exact: '/api/connectors/oauth/paste', h: handleConnectorOauthPaste },   // starnet-berries
   { m: 'GET', exact: '/api/connectors', h: handleConnectorsList },
   { m: 'POST', exact: '/api/connectors', h: handleConnectorUpsert },
   { m: 'POST', exact: '/api/connectors/remove', h: handleConnectorRemove },
@@ -17373,12 +17382,22 @@ async function handleConnectorOauthStart(req, res) {
     // so a client cached last session names a different http://127.0.0.1:<port>/ callback; servers that match
     // redirect URIs exactly then refuse the authorize request on their own page and the sign-in times out.
     // A client cached before redirectUri was recorded is re-registered once (a fresh DCR client is harmless).
-    const redirectMoved = !!clientId && cachedClient.redirectUri !== CONNECTOR_OAUTH_REDIRECT;
+    // starnet-berries: a server that refused our public redirect keeps its loopback client (see CONNECTOR_OAUTH_LOOPBACK_REDIRECT)
+    let redirectUri = (cachedClient.loopbackFallback && cachedClient.redirectUri === CONNECTOR_OAUTH_LOOPBACK_REDIRECT) ? CONNECTOR_OAUTH_LOOPBACK_REDIRECT : CONNECTOR_OAUTH_REDIRECT;
+    const redirectMoved = !!clientId && cachedClient.redirectUri !== redirectUri;
     if (!clientId || redirectMoved || tokenEndpointAuthMethod !== requiredAuthMethod || (requiredAuthMethod !== 'none' && !clientSecret)) {
       if (!disc.registrationEndpoint) return json(502, { error: 'this server needs a pre-registered OAuth client (no dynamic registration)' });
-      const reg = await mcpOauth.registerClient({ fetchImpl: connectorOauthFetch, registrationEndpoint: disc.registrationEndpoint,
-        redirectUri: CONNECTOR_OAUTH_REDIRECT, clientName: 'StarNet', tokenEndpointAuthMethod: requiredAuthMethod,
+      const register = (uri) => mcpOauth.registerClient({ fetchImpl: connectorOauthFetch, registrationEndpoint: disc.registrationEndpoint,
+        redirectUri: uri, clientName: 'StarNet', tokenEndpointAuthMethod: requiredAuthMethod,
         signal: controller.signal, timeoutMs: CONNECTOR_OAUTH_LEG_MS, deadlineAt, now: net.now });
+      let reg;
+      try { reg = await register(redirectUri); }
+      catch (e) {
+        if (redirectUri === CONNECTOR_OAUTH_LOOPBACK_REDIRECT || !/redirect/i.test((e && e.message) || '')) throw e;
+        assertCurrent();
+        redirectUri = CONNECTOR_OAUTH_LOOPBACK_REDIRECT;
+        reg = await register(redirectUri);
+      }
       assertCurrent();
       clientId = reg.clientId;
       clientSecret = reg.clientSecret;
@@ -17387,7 +17406,8 @@ async function handleConnectorOauthStart(req, res) {
       // the clientId is still valid in-memory for this flow, and a failed cache only costs a re-registration next
       // time (harmless — a fresh DCR client), unlike a lost token which forces a full re-sign-in.
       const nextClientState = connectorStateMod.withOauthClient(connectorStateMod.envelope(connectorConfigs, connectorOauth), disc.authorizationServer,
-        { clientId: clientId, clientSecret: clientSecret, tokenEndpointAuthMethod: tokenEndpointAuthMethod, redirectUri: CONNECTOR_OAUTH_REDIRECT, at: Date.now() });
+        { clientId: clientId, clientSecret: clientSecret, tokenEndpointAuthMethod: tokenEndpointAuthMethod, redirectUri: redirectUri,
+          loopbackFallback: redirectUri !== CONNECTOR_OAUTH_REDIRECT, at: Date.now() });
       if (persistConnectorState(nextClientState.configs, nextClientState.oauth)) adoptConnectorState(nextClientState);
       else console.warn('[connectors] DCR clientId cache not persisted for ' + disc.authorizationServer + ' — a later sign-in will re-register a fresh client.');
     }
@@ -17401,12 +17421,13 @@ async function handleConnectorOauthStart(req, res) {
     connectorOauthPending.set(state, { id: entry.id, attemptId, generation, label: entry.name, custom: target.custom === true, verifier: verifier, clientId: clientId,
       clientSecret: clientSecret, tokenEndpointAuthMethod: tokenEndpointAuthMethod,
       tokenEndpoint: disc.tokenEndpoint, authorizationServer: disc.authorizationServer, resource: disc.resource,
-      serverUrl: entry.url, redirectUri: CONNECTOR_OAUTH_REDIRECT, at: Date.now() });
+      serverUrl: entry.url, redirectUri: redirectUri, at: Date.now() });
     // bound the pending set (a stale/abandoned sign-in never accumulates); 10-minute TTL.
     for (const [k, v] of connectorOauthPending) { if (Date.now() - (v.at || 0) > 600000) connectorOauthPending.delete(k); }
-    const url = mcpOauth.buildAuthorizeUrl({ authorizationEndpoint: disc.authorizationEndpoint, clientId: clientId, redirectUri: CONNECTOR_OAUTH_REDIRECT, challenge: mcpOauth.challengeOf(verifier), state: state, resource: disc.resource, scope: disc.resourceScopes });
+    const url = mcpOauth.buildAuthorizeUrl({ authorizationEndpoint: disc.authorizationEndpoint, clientId: clientId, redirectUri: redirectUri, challenge: mcpOauth.challengeOf(verifier), state: state, resource: disc.resource, scope: disc.resourceScopes });
     completed = true;
-    json(200, { url: url, attemptId });
+    // paste: the browser will land on an unreachable loopback page; the UI asks for that page's address (starnet-berries)
+    json(200, { url: url, attemptId, paste: redirectUri !== CONNECTOR_OAUTH_REDIRECT });
   } catch (e) {
     completed = true;
     const msg = (e && e.message) || 'oauth start failed';
@@ -17445,6 +17466,27 @@ async function handleConnectorDevicePoll(req, res) {
   const attemptId = String(body.attemptId || '');
   if (!/^[A-Za-z0-9_-]{8,80}$/.test(attemptId)) return json(400, { error: 'invalid sign-in attempt' });
   return json(200, await githubDeviceFlow.poll(attemptId));
+}
+
+/* starnet-berries: POST /api/connectors/oauth/paste { url } — the loopback-redirect fallback. The Commander pastes the
+   address of the page the provider sent them to (http://127.0.0.1:<port>/api/connectors/oauth/callback?code&state); it
+   runs the real callback with that query, so the CSRF `state` is still the fence (an unknown state finishes nothing). */
+async function handleConnectorOauthPaste(req, res) {
+  let body = {};
+  try { body = JSON.parse(await readBody(req, 8192)) || {}; } catch (_) {}
+  const send = (code, o) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
+  let u;
+  try { u = new URL(String((body && body.url) || '').trim()); } catch (_) { return send(400, { error: 'paste the full address of the page you landed on' }); }
+  if (!/\/api\/connectors\/oauth\/callback$/.test(u.pathname) || !(u.searchParams.get('state'))) return send(400, { error: 'that address is not a StarNet sign-in callback' });
+  let html = '';
+  const fake = { writeHead() {}, setHeader() {}, end(b) { html += String(b || ''); }, write(b) { html += String(b || ''); } };
+  try { await handleConnectorOauthCallback({ url: '/api/connectors/oauth/callback?' + u.searchParams.toString(), headers: {}, method: 'GET', on() {}, removeListener() {} }, fake); }
+  catch (e) { return send(502, { error: (e && e.message) || 'sign-in failed' }); }
+  const strip = (s) => String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+  const title = strip((html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || [])[1] || '').replace(/^[✓✕]\s*/, '');
+  const msg = strip((html.match(/<p style="color:#b9c7bd">([\s\S]*?)<\/p>/) || [])[1] || '');
+  const ok = /<h2[^>]*>✓/.test(html);
+  send(ok ? 200 : 400, ok ? { ok: true, title, message: msg } : { error: (title ? title + ' — ' : '') + (msg || 'sign-in failed') });
 }
 
 /* GET /api/connectors/oauth/callback?code&state — the redirect target (a top-level browser navigation, so it is
