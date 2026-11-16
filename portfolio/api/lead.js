@@ -1,8 +1,6 @@
-// Contact form + "Hire me for X" briefs → StarNet Leads workflow.
+// Contact form → StarNet Leads workflow.
 import { json, readJson, clean, isEmail, isBot, rateLimit, sendToStarNet, handle, HttpError } from './_lib.js';
-import { services } from '../site/content.js';
-
-const JOB_TYPES = new Set(['general', ...services.map((s) => s.id)]);
+const JOB_TYPES = new Set(['general', 'audit']);
 
 export const POST = handle(async (request) => {
   rateLimit(request, 'lead', 5, 10 * 60_000);
@@ -32,8 +30,8 @@ export const POST = handle(async (request) => {
     message,
     answers,
     instructions:
-      'New portfolio lead. Draft a warm, specific reply for LeVente to approve (do not send it), ' +
-      'plus a short scope with open questions and a rough estimate range for this job type.',
+      'New message from the personal portfolio. Summarize who it is and what they want, and draft a warm, specific reply ' +
+      'for LeVente to approve (do not send it). If it is a request for client work, note that it may belong with Cardinal Studio.',
   });
 
   if (!result.queued) {

@@ -1,12 +1,13 @@
 // "Is LeVente a fit?" A recruiter pastes a job post; Claude writes a short, honest fit letter from the facts in
 // site/content.js and picks the most relevant projects. The post also goes to StarNet so LeVente sees the lead.
 import { json, readJson, clean, isEmail, isBot, rateLimit, sendToStarNet, hasClaude, askClaude, handle, HttpError } from './_lib.js';
-import { profile, projects, services } from '../site/content.js';
+import { profile, projects, alsoBuilt } from '../site/content.js';
 
 const facts = JSON.stringify({
-  name: profile.name, role: profile.role, headline: profile.headline, intro: profile.intro, skills: profile.skills,
-  services: services.map((s) => ({ title: s.title, blurb: s.blurb })),
-  projects: projects.map(({ name, tag, summary, stack }) => ({ name, tag, summary, stack })),
+  name: profile.name, role: profile.role, location: profile.location, headline: profile.headline,
+  background: profile.start, loves: profile.loves, skills: profile.skills,
+  projects: projects.map(({ name, tag, summary, ai, stack }) => ({ name, tag, summary, howAiWasUsed: ai, stack })),
+  alsoBuilt: alsoBuilt.map(({ name, text }) => ({ name, text })),
 });
 
 export const POST = handle(async (request) => {

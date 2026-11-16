@@ -1,5 +1,5 @@
 // The hero: a glowing agent core with each service orbiting it as a node, linked by lines that carry little
-// packets of "work". Drag to orbit, tap a node to open its brief. Scrolling drifts the camera through the stars.
+// packets of "work". Drag to orbit, tap a node to open that project. Scrolling drifts the camera through the stars.
 import * as THREE from 'three';
 
 const isCoarse = matchMedia('(pointer: coarse)').matches;
@@ -21,7 +21,7 @@ function glowTexture() {
   return t;
 }
 
-export function createScene(canvas, { services, onSelect, onHover }) {
+export function createScene(canvas, { nodes: items, onSelect, onHover }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isCoarse, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, isCoarse ? 1.75 : 2));
   renderer.setClearColor(0x05060f, 1);
@@ -82,12 +82,12 @@ export function createScene(canvas, { services, onSelect, onHover }) {
   // ---------- service nodes + links + packets ----------
   const nodes = [];
   const pickables = [];
-  services.forEach((svc, i) => {
+  items.forEach((svc, i) => {
     const color = new THREE.Color(svc.color);
     const radius = 3.1 + (i % 2) * 0.9;
     const tilt = (i - 1.5) * 0.35;
     const speed = 0.12 + i * 0.025;
-    const phase = (i / services.length) * Math.PI * 2;
+    const phase = (i / items.length) * Math.PI * 2;
 
     const group = new THREE.Group();
     const orb = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 24), new THREE.MeshBasicMaterial({ color }));
@@ -229,7 +229,10 @@ export function createScene(canvas, { services, onSelect, onHover }) {
     const baseX = portrait ? 0 : 2.6;
     const baseY = portrait ? 1.7 : 0.2;
     const fade = THREE.MathUtils.clamp(s, 0, 1);
-    world.position.set(baseX + (portrait ? 0 : fade * 1.2), baseY + fade * (portrait ? 1.2 : 0.6), -fade * 3);
+    // Past the hero the scene becomes a backdrop, so dim it and let the text lead.
+    const dim = (1 - fade * 0.55).toFixed(3);
+    if (canvas.style.opacity !== dim) canvas.style.opacity = dim;
+    world.position.set(baseX + (portrait ? 0 : fade * 1.6), baseY + fade * (portrait ? 2.6 : 0.6), -fade * 3);
     world.scale.setScalar(portrait ? 0.78 : 1);
     camera.position.x += ((isCoarse ? 0 : state.mx * 0.5) - camera.position.x) * 0.04;
     camera.position.y += ((isCoarse ? 0 : -state.my * 0.3) - s * 1.2 - camera.position.y) * 0.06;

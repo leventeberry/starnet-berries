@@ -1,4 +1,4 @@
-import { profile, services, projects } from './content.js';
+import { profile, projects, alsoBuilt } from './content.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -6,7 +6,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 // ---------- content ----------
 $('#hero-role').textContent = profile.role + (profile.location ? ` · ${profile.location}` : '');
 $('#hero-headline').textContent = profile.headline;
-$('#about-intro').textContent = profile.intro;
+$('#about-start').innerHTML = profile.start.map((p) => `<p>${esc(p)}</p>`).join('');
+$('#loves').innerHTML = profile.loves.map((l) => `<li><b>${esc(l.title)}</b><span>${esc(l.text)}</span></li>`).join('');
 $('#skills').innerHTML = profile.skills.map((s) => `<li>${esc(s)}</li>`).join('');
 $('#year').textContent = new Date().getFullYear();
 $('#footer-links').innerHTML = [
@@ -14,18 +15,14 @@ $('#footer-links').innerHTML = [
   profile.linkedin && `<a href="${esc(profile.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>`,
 ].filter(Boolean).join('');
 
-$('#service-grid').innerHTML = services.map((s) => `
-  <button class="svc reveal" style="--c:${s.color}" data-service="${s.id}">
-    <h3>${esc(s.title)}</h3><p>${esc(s.blurb)}</p><span class="go">Start a brief</span>
-  </button>`).join('');
-
-$('#work-grid').innerHTML = projects.map((p) => {
-  const tag = p.url ? 'a' : 'article';
-  const href = p.url ? ` href="${esc(p.url)}" target="_blank" rel="noopener"` : '';
-  return `<${tag} class="proj reveal"${href}>
+$('#work-grid').innerHTML = projects.map((p, i) => `
+  <button class="proj reveal" style="--c:${p.color}" data-project="${p.id}">
+    <span class="num">0${i + 1} /</span>
     <span class="tag">${esc(p.tag)}</span><h3>${esc(p.name)}</h3><p>${esc(p.summary)}</p>
-    <div class="stack">${p.stack.map((x) => `<span>${esc(x)}</span>`).join('')}</div></${tag}>`;
-}).join('');
+    <span class="ai-line"><b>AI</b> ${esc(p.aiShort)}</span>
+    <span class="go">How it was built</span>
+  </button>`).join('');
+$('#also-list').innerHTML = alsoBuilt.map((x) => `<li>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>` : `<b>${esc(x.name)}</b>`}<span>${esc(x.text)}</span></li>`).join('');
 
 // ---------- api ----------
 async function post(path, body) {
@@ -39,7 +36,7 @@ const busy = (btn, on, label) => { btn.disabled = on; if (label) btn.textContent
 let status = { leads: false, audit: { ai: false }, cover: { ai: false }, contactEmail: '' };
 fetch('/api/status').then((r) => r.json()).then((s) => {
   status = s;
-  const live = s.leads || s.audit?.ai || s.cover?.ai;
+  const live = s.leads || s.audit?.ai;
   $('#agent-status').textContent = live ? 'Agents online' : 'Agents warming up';
   $('#agent-pulse').classList.toggle('is-off', !live);
 }).catch(() => {
@@ -53,65 +50,29 @@ function mailtoFallback(email, subject, text) {
   return true;
 }
 
-// ---------- brief sheet ("hire me for X") ----------
-const sheet = $('#brief');
-const briefForm = $('#brief-form');
-let currentService = null;
-
-function fieldHtml(q) {
-  const common = `name="${esc(q.name)}" placeholder="${esc(q.placeholder || '')}"`;
-  let input;
-  if (q.type === 'textarea') input = `<textarea ${common} rows="3"></textarea>`;
-  else if (q.type === 'select') input = `<select name="${esc(q.name)}">${q.options.map((o) => `<option>${esc(o)}</option>`).join('')}</select>`;
-  else input = `<input ${common} type="${q.type === 'url' ? 'url' : 'text'}"${q.type === 'url' ? ' inputmode="url"' : ''}>`;
-  return `<label>${esc(q.label)} ${input}</label>`;
-}
-
-export function openBrief(id) {
-  const svc = services.find((s) => s.id === id);
-  if (!svc) return;
-  currentService = svc;
-  sheet.style.setProperty('--c', svc.color);
-  $('#brief-title').textContent = svc.title;
-  $('#brief-blurb').textContent = svc.blurb;
-  $('#brief-fields').innerHTML = `<div class="stack-form">${svc.questions.map(fieldHtml).join('')}</div>`;
-  const note = $('.form-note', briefForm); note.textContent = ''; note.className = 'form-note';
-  const btn = $('button[type=submit]', briefForm); busy(btn, false, 'Send brief'); btn.style.setProperty('--c', svc.color);
+// ---------- project sheet ----------
+const sheet = $('#sheet');
+export function openProject(id) {
+  const p = projects.find((x) => x.id === id);
+  if (!p) return;
+  sheet.style.setProperty('--c', p.color);
+  $('#sheet-tag').textContent = p.tag;
+  $('#sheet-title').textContent = p.name;
+  $('#sheet-summary').textContent = p.summary;
+  $('#sheet-ai').textContent = p.ai;
+  $('#sheet-stack').innerHTML = p.stack.map((x) => `<span>${esc(x)}</span>`).join('');
+  const link = $('#sheet-link');
+  link.hidden = !p.url;
+  if (p.url) { link.href = p.url; link.textContent = `Visit ${p.linkLabel || p.name} ↗`; }
   sheet.showModal();
   scene?.pulse(id);
 }
 document.addEventListener('click', (e) => {
-  const b = e.target.closest('[data-service]');
-  if (b) openBrief(b.dataset.service);
+  const b = e.target.closest('[data-project]');
+  if (b) openProject(b.dataset.project);
 });
-$('#brief-close').addEventListener('click', () => sheet.close());
+$('#sheet-close').addEventListener('click', () => sheet.close());
 sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); }); // tap outside
-
-briefForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const note = $('.form-note', briefForm);
-  const btn = $('button[type=submit]', briefForm);
-  const data = formData(briefForm);
-  const answers = {};
-  for (const q of currentService.questions) answers[q.name] = data[q.name] || '';
-  if (!data.name || !data.email) { note.className = 'form-note err'; note.textContent = 'Add your name and email so I can reply.'; return; }
-  busy(btn, true, 'Sending…');
-  const r = await post('/api/lead', { jobType: currentService.id, name: data.name, email: data.email, answers, company_website: data.company_website });
-  if (r.ok) {
-    note.className = 'form-note ok';
-    note.textContent = 'Got it. My agent is drafting your scope now, and I\'ll reply personally.';
-    btn.textContent = 'Sent ✓';
-    setTimeout(() => sheet.open && sheet.close(), 2600);
-  } else {
-    busy(btn, false, 'Send brief');
-    note.className = 'form-note err';
-    note.textContent = r.error || 'That did not go through.';
-    if (r.fallbackEmail) {
-      const body = Object.entries(answers).map(([k, v]) => `${k}: ${v}`).join('\n') + `\n\n— ${data.name} (${data.email})`;
-      setTimeout(() => mailtoFallback(r.fallbackEmail, `Project brief: ${currentService.title}`, body), 1200);
-    }
-  }
-});
 
 // ---------- contact ----------
 const contactForm = $('#contact-form');
@@ -158,13 +119,13 @@ auditForm.addEventListener('submit', async (e) => {
   const data = formData(auditForm);
   if (!data.url) { auditOut.innerHTML = errBox('Enter a site address first.'); return; }
   const btn = $('button', auditForm);
-  busy(btn, true, 'Auditing…');
+  busy(btn, true, 'Reviewing…');
   auditOut.innerHTML = thinking('Fetching the page and running checks…');
   const steps = ['Timing the server…', 'Reading SEO tags…', 'Checking security headers…', 'Asking the agent for fixes…'];
   let i = 0; const iv = setInterval(() => { const s = $('.thinking span:last-child', auditOut); if (s && i < steps.length) s.textContent = steps[i++]; }, 1400);
   const r = await post('/api/audit', data);
   clearInterval(iv);
-  busy(btn, false, 'Run audit');
+  busy(btn, false, 'Review my site');
   if (!r.ok) { auditOut.innerHTML = errBox(r.error || 'The audit failed.'); return; }
   lastAudit = r.report;
   renderAudit(r.report);
@@ -187,9 +148,9 @@ function renderAudit(rep) {
     </div>
     ${fails.length ? `<ul class="checks">${fails.map(checkHtml).join('')}</ul>` : '<p class="muted">Every check passed. Nice.</p>'}
     ${passes.length ? `<details class="passed"><summary>${passes.length} checks passed</summary><ul class="checks">${passes.map(checkHtml).join('')}</ul></details>` : ''}
-    ${rep.advice ? `<div class="advice"><h4>Agent recommendations</h4>${esc(rep.advice)}</div>` : ''}
+    ${rep.advice ? `<div class="advice"><h4>What the AI would fix first</h4>${esc(rep.advice)}</div>` : ''}
     <div class="followup">
-      <p class="muted" style="margin:0">Want the full write-up and a plan to fix it? I'll send it to you.</p>
+      <p class="muted" style="margin:0">Want the full write-up? My agents will draft it and I'll send it to you.</p>
       <form class="row-form" id="audit-follow" novalidate>
         <input name="email" type="email" autocomplete="email" placeholder="you@business.com" required>
         <button class="btn btn-ghost" type="submit">Email me the report</button>
@@ -224,7 +185,7 @@ coverForm.addEventListener('submit', async (e) => {
   busy(btn, true, 'Writing…');
   coverOut.innerHTML = thinking('Reading the post and matching it to my work…');
   const r = await post('/api/cover-letter', data);
-  busy(btn, false, 'Write my fit letter');
+  busy(btn, false, 'Check the fit');
   if (!r.ok) { coverOut.innerHTML = errBox(r.error || 'That did not work.'); return; }
   if (!r.letter) {
     coverOut.innerHTML = `<div class="advice"><h4>Sent to my agents</h4>The writing agent will draft this and I'll review it${data.email ? ' and email you' : ''}. Thanks for thinking of me.</div>`;
@@ -257,17 +218,17 @@ document.querySelectorAll('.panel, .section-head, .reveal').forEach((el) => { el
 let scene = null;
 const label = $('#node-label');
 function showLabel(id, x, y) {
-  const svc = services.find((s) => s.id === id);
+  const svc = projects.find((s) => s.id === id);
   if (!svc) { label.hidden = true; return; }
-  label.textContent = svc.title;
+  label.textContent = svc.name;
   label.style.left = `${x}px`; label.style.top = `${y}px`; label.style.borderColor = svc.color;
   label.hidden = false;
 }
 try {
   const { createScene } = await import('./scene.js');
   scene = createScene($('#scene'), {
-    services,
-    onSelect: (id) => { label.hidden = true; openBrief(id); },
+    nodes: projects,
+    onSelect: (id) => { label.hidden = true; openProject(id); },
     onHover: (id, x, y) => (id ? showLabel(id, x, y) : (label.hidden = true)),
   });
 } catch (err) {

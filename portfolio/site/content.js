@@ -1,110 +1,93 @@
 // Everything a visitor reads lives here, so editing copy never means touching the 3D or form code.
-// The serverless functions import this too: the cover-letter agent only writes from these facts.
-// DRAFT COPY: written from public GitHub repos. LeVente, replace anything that isn't right.
+// The serverless functions import this too: the fit-letter agent only writes from these facts.
+//
+// DRAFT COPY. Facts come from LeVente's repos (Cardinal Studio, Bean Baron, Chexi, Chexi Fidelity, StarNet).
+// Lines marked "DRAFT:" are my wording of things I couldn't verify. LeVente, rewrite them in your own voice.
 
 export const profile = {
   name: 'LeVente Berry',
-  role: 'AI systems builder',
-  location: '', // e.g. 'Columbus, OH'; shown under your name when set
-  headline: 'I build AI agents, automations, and the web apps they live in.',
-  intro:
-    'I design and ship agent systems end to end: the model plumbing, the workflows, and the product people actually click on. ' +
-    'This site runs on them. The tools below hand real work to my own agent harness, StarNet.',
+  role: 'Builder', // DRAFT
+  location: 'Columbus, Ohio',
+  headline: 'I build software, games and AI systems, and I use AI to build them faster.', // DRAFT
   github: 'https://github.com/leventeberry',
   linkedin: '', // add your LinkedIn URL to show the link
+
+  // DRAFT: inferred from your oldest public repos (bash scripts, an Arch installer, small Go servers).
+  start: [
+    'I started the way a lot of builders do: tinkering. Shell scripts to automate my own machine, an Arch Linux installer, small Go servers just to see how HTTP really works.',
+    'Then I started building things for other people: web apps, CRMs, dashboards. Once AI got good enough to be a real collaborator, it changed how I work. Now it is part of almost everything I ship.',
+  ],
+
+  // What I love to build. DRAFT: edit freely.
+  loves: [
+    { title: 'Products people actually use', text: 'Bean Baron picked up real players I never met. That feeling is the whole point.' },
+    { title: 'Games', text: 'Economies, progression and the small loops that make you come back.' },
+    { title: 'Agent systems', text: 'AI that does real work behind the scenes, with a person checking the parts that matter.' },
+    { title: 'Tools that run themselves', text: 'Self-hosted stacks, CI that deploys on merge, and automation that keeps a business running.' },
+  ],
+
   skills: [
-    'AI agents & tool use', 'Workflow automation', 'TypeScript / React / Next.js', 'Node.js & Go APIs',
-    'Supabase & Postgres', 'Three.js & interactive 3D', 'Docker, Traefik & VPS ops', 'Godot game dev',
+    'TypeScript / React', 'TanStack Start & Next.js', 'Node.js & Go', 'Supabase & Postgres',
+    'AI agents & tool use', 'Three.js', 'Docker & VPS ops', 'Godot',
   ],
 };
 
-// Each service is a "Hire me for X" button. `id` is sent to StarNet as jobType, so a workflow can branch on it.
-export const services = [
+// The four featured projects. Each one is also a glowing node in the 3D hero.
+// `ai` is the "how AI was used" line, which is the point of the site.
+export const projects = [
   {
-    id: 'website',
-    title: 'Websites & web apps',
-    blurb: 'Fast, polished sites and full-stack apps, from landing page to dashboard.',
-    color: '#ff3d6e',
-    questions: [
-      { name: 'project', label: 'What are we building?', placeholder: 'A booking site for my studio, with payments', type: 'textarea' },
-      { name: 'current', label: 'Current site (if any)', placeholder: 'https://', type: 'url' },
-      { name: 'timeline', label: 'Timeline', type: 'select', options: ['ASAP', '1–2 months', '3+ months', 'Flexible'] },
-    ],
+    id: 'cardinal',
+    aiShort: 'An AI assistant that answers and qualifies new leads for clients.',
+    name: 'Cardinal Studio',
+    tag: 'My studio',
+    color: '#ff3d55',
+    summary: 'My web and automation studio in Columbus. It builds websites, custom software and AI systems for small businesses.',
+    ai: 'Its flagship is an AI Lead Conversion System: an assistant that answers new leads, qualifies them and hands them to a person. The studio\'s own site, client portal and admin are built with AI agents under a strict review process: every change gets an automated security and correctness review before I approve it.',
+    stack: ['Next.js', 'Bun', 'Postgres', 'AI agents'],
+    url: 'https://cardinalstudio.ai',
+    linkLabel: 'cardinalstudio.ai',
   },
   {
-    id: 'automation',
-    title: 'AI agents & automation',
-    blurb: 'Agents that take repetitive work off your plate: intake, follow-ups, reports, research.',
-    color: '#4de1ff',
-    questions: [
-      { name: 'process', label: 'What process eats your time?', placeholder: 'Every new lead gets a manual quote and three follow-up emails', type: 'textarea' },
-      { name: 'tools', label: 'Tools you use today', placeholder: 'Gmail, HubSpot, Google Sheets', type: 'text' },
-      { name: 'volume', label: 'How often does it happen?', type: 'select', options: ['A few times a week', 'Daily', 'Dozens a day', 'Not sure'] },
-    ],
-  },
-  {
-    id: 'audit',
-    title: 'Site & AI-readiness audit',
-    blurb: 'A clear report on speed, SEO, security headers and where AI could save you time.',
+    id: 'beanbaron',
+    aiShort: 'Prototyped with an AI app builder, then grown with coding agents.',
+    name: 'Bean Baron',
+    tag: 'Game',
     color: '#ffc14d',
-    questions: [
-      { name: 'url', label: 'Site to audit', placeholder: 'https://example.com', type: 'url' },
-      { name: 'goal', label: 'What should the site do better?', placeholder: 'More booked calls from mobile visitors', type: 'textarea' },
-    ],
+    summary: 'A mobile-first idle coffee-empire game: harvest beans, time your sales on a shared market, build businesses and climb the net-worth leaderboard. It found real players on its own.',
+    ai: 'I prototyped it with an AI app builder, then took it over by hand and with coding agents: a server-authoritative game engine, a live market with price events, and anti-cheat validation on every action.',
+    stack: ['React', 'TanStack Start', 'Supabase', 'Postgres'],
+    url: 'https://beanbaron.app',
+    linkLabel: 'beanbaron.app',
   },
   {
-    id: 'integration',
-    title: 'Dashboards & integrations',
-    blurb: 'CRMs, internal tools and APIs that make your data talk to each other.',
+    id: 'chexi',
+    aiShort: 'AI is the product: systems that turn noisy data into clear signals.',
+    name: 'Chexi',
+    tag: 'AI product studio',
+    color: '#4de1ff',
+    summary: 'My software company. Chexi builds intelligence systems that help people monitor complex environments, spot the signals that matter and make better decisions.',
+    ai: 'AI is the product here, not just the tool. Its products, Solbase and Civora, turn messy, fast-moving data into clear signals.', // DRAFT: add a line on what each one does
+    stack: ['TypeScript', 'LLMs', 'Data pipelines'],
+    url: '', // add https://chexi.ai when it's live
+    linkLabel: '',
+  },
+  {
+    id: 'fidelity',
+    aiShort: 'AI checking AI: daily probes that catch providers drifting.',
+    name: 'Chexi Fidelity',
+    tag: 'In progress',
     color: '#a98bff',
-    questions: [
-      { name: 'systems', label: 'Which systems need to connect?', placeholder: 'Stripe → Supabase → a sales dashboard', type: 'textarea' },
-      { name: 'users', label: 'Who will use it?', placeholder: 'Five people on the sales team', type: 'text' },
-    ],
+    summary: 'An independent monitor for AI inference providers. Daily outside-in checks of open-model providers, with alerts when a provider quietly drifts from the model it claims to serve.',
+    ai: 'This is AI checking AI: it will send the same probes to each provider every day, score the answers against the reference model and flag drift. Built with coding agents on a TypeScript and Postgres stack.',
+    stack: ['TypeScript', 'TanStack Start', 'Postgres'],
+    url: '', // pre-launch: add the link when it's announced
+    linkLabel: '',
   },
 ];
 
-export const projects = [
-  {
-    name: 'StarNet (hosted)',
-    tag: 'Agent harness',
-    summary: 'Turned a desktop-first multi-agent harness into a hosted browser app behind 2FA, with phone controls and public webhooks. It powers the tools on this page.',
-    stack: ['Node.js', 'Docker', 'Authelia', 'CI/CD'],
-    url: 'https://github.com/leventeberry/starnet-berries',
-  },
-  {
-    name: 'Chexi Fidelity',
-    tag: 'AI infrastructure',
-    summary: 'An independent monitor that checks whether inference providers serve the model quality they claim.',
-    stack: ['TypeScript', 'Next.js', 'Vercel'],
-    url: 'https://chexi-fidelity.vercel.app',
-  },
-  {
-    name: 'Bean Baron',
-    tag: 'Game + backend',
-    summary: 'A trading game built in Godot with its own API for sync, a live market and leaderboards.',
-    stack: ['Godot', 'TypeScript', 'Supabase'],
-    url: '',
-  },
-  {
-    name: 'Hermes Stack',
-    tag: 'Self-hosted ops',
-    summary: 'A local Traefik, Firecrawl and Hermes Docker stack with an operator console for running agents on my own hardware.',
-    stack: ['Docker', 'Traefik', 'TypeScript'],
-    url: '',
-  },
-  {
-    name: 'Borrower CRM',
-    tag: 'Client work',
-    summary: 'A CRM and dashboard for tracking borrowers through a lending pipeline.',
-    stack: ['React', 'TypeScript', 'Vercel'],
-    url: 'https://v0-crm-dashboard-for-borrowers.vercel.app',
-  },
-  {
-    name: 'Onyx',
-    tag: 'Product',
-    summary: 'A family coordination app for shared schedules, tasks and plans.',
-    stack: ['TypeScript', 'React'],
-    url: '',
-  },
+// Smaller things, shown as a compact list under the featured four.
+export const alsoBuilt = [
+  { name: 'StarNet (hosted)', text: 'A multi-agent harness I run on my own server. It powers the forms on this page.', url: 'https://github.com/leventeberry/starnet-berries' },
+  { name: 'Hermes Stack', text: 'A self-hosted Traefik, Firecrawl and agent stack with an operator console.', url: '' },
+  { name: 'This site', text: 'Three.js, plain JavaScript and a few serverless functions. No framework.', url: 'https://github.com/leventeberry/starnet-berries/tree/main/portfolio' },
 ];

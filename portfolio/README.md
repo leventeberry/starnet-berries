@@ -1,6 +1,7 @@
 # leventeberry.me portfolio
 
-An interactive 3D portfolio (Three.js) whose forms and demos hand real work to StarNet.
+A personal builder portfolio: a 3D hero (Three.js) where each node is a featured project, "how AI helped" write-ups,
+a live AI site review, and a contact form that hands messages to StarNet.
 Static site in `site/`, Vercel functions in `api/`. No build step.
 
 ## What each feature does
@@ -8,9 +9,8 @@ Static site in `site/`, Vercel functions in `api/`. No build step.
 | Feature | Endpoint | Works with no config | Gets better with |
 |---|---|---|---|
 | Contact form | `POST /api/lead` (`jobType: general`) | Shows "offline" (or opens email if `CONTACT_EMAIL` is set) | `STARNET_HOOK_LEADS_*` |
-| "Hire me for X" briefs (tap a card or a 3D node) | `POST /api/lead` (`jobType: website \| automation \| audit \| integration`) | same as above | `STARNET_HOOK_LEADS_*` |
-| Site audit | `POST /api/audit` | Yes: 15 instant checks (speed, SEO, mobile, a11y, security headers) | `ANTHROPIC_API_KEY` adds 3 prioritized fixes; "Email me the report" goes to `STARNET_HOOK_AUDIT_*` |
-| "Am I a fit?" (job post → fit letter) | `POST /api/cover-letter` | Sends the post to StarNet if a hook is set | `ANTHROPIC_API_KEY` writes the letter on the spot |
+| Site review (AI lab) | `POST /api/audit` | Yes: 15 instant checks (speed, SEO, mobile, a11y, security headers) | `ANTHROPIC_API_KEY` adds 3 prioritized fixes; "Email me the report" goes to `STARNET_HOOK_AUDIT_*` |
+| "Hiring?" tab (job post → fit letter) | `POST /api/cover-letter` | Sends the post to StarNet if a hook is set | `ANTHROPIC_API_KEY` writes the letter on the spot |
 | Agent status pill | `GET /api/status` | Yes | |
 
 Every StarNet call is `POST <hook url>` with `Authorization: Bearer <secret>` and an `Idempotency-Key`, so a
@@ -49,5 +49,5 @@ gives functions 60 s. Then add `leventeberry.me` under Project → Domains and p
 
 ## Editing
 
-All copy, services, brief questions and projects are in `site/content.js`. The fit-letter agent only uses facts
+All copy (bio, how I started, what I love to build, the four projects and how AI helped each) is in `site/content.js`. Lines marked `DRAFT` are guesses to rewrite. The fit-letter agent only uses facts
 from that file, so keep it accurate. `site/scene.js` is the 3D hero; `site/styles.css` holds the colors at the top.

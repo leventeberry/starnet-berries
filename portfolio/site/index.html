@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>LeVente Berry · AI systems builder</title>
-  <meta name="description" content="LeVente Berry builds AI agents, automations and web apps. Try the live agents: audit your site, check job fit, or start a project brief.">
+  <title>LeVente Berry · Builder</title>
+  <meta name="description" content="LeVente Berry builds software, games and AI systems. See Cardinal Studio, Bean Baron and Chexi, and watch AI review your own site.">
   <meta name="theme-color" content="#05060f">
-  <meta property="og:title" content="LeVente Berry · AI systems builder">
-  <meta property="og:description" content="AI agents, automations and the web apps they live in. Try the live agents on the site.">
+  <meta property="og:title" content="LeVente Berry · Builder">
+  <meta property="og:description" content="Software, games and AI systems, and how AI helped build them.">
   <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='14' fill='%23ff3d6e'/%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%234de1ff' stroke-width='3' stroke-dasharray='6 8'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,15 +23,15 @@
   <header class="nav" id="nav">
     <a class="brand" href="#top" aria-label="Back to top"><span class="brand-dot"></span>LB</a>
     <nav class="nav-links" aria-label="Sections">
-      <a href="#services" class="nav-hire">Hire me</a>
-      <a href="#lab">Agent lab</a>
-      <a href="#work">Work</a>
-      <a href="#contact" class="nav-cta">Contact</a>
+      <a href="#about">About</a>
+      <a href="#work" class="nav-hire">Work</a>
+      <a href="#lab">AI lab</a>
+      <a href="#contact" class="nav-cta">Say hi</a>
     </nav>
   </header>
 
   <main id="top">
-    <!-- HERO: the 3D constellation sits behind; each glowing node is a service you can tap. -->
+    <!-- HERO: the 3D constellation sits behind; each glowing node is a project you can tap. -->
     <section class="hero" id="hero">
       <div class="hero-copy">
         <p class="eyebrow"><span class="pulse" id="agent-pulse"></span><span id="agent-status">Agents online</span></p>
@@ -39,95 +39,98 @@
         <p class="hero-role" id="hero-role"></p>
         <p class="hero-lede" id="hero-headline"></p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#services">Start a project</a>
-          <a class="btn btn-ghost" href="#lab">Try the agents</a>
+          <a class="btn btn-primary" href="#work">See what I build</a>
+          <a class="btn btn-ghost" href="#lab">Watch AI work</a>
         </div>
       </div>
-      <p class="hero-hint" id="hero-hint">Drag to orbit · tap a glowing node</p>
+      <p class="hero-hint" id="hero-hint">Drag to orbit · tap a project</p>
       <div class="node-label" id="node-label" hidden></div>
     </section>
 
     <section class="section" id="about">
       <div class="panel about">
-        <p class="kicker">How this site works</p>
-        <h2>The front door to my agents.</h2>
-        <p id="about-intro"></p>
-        <ol class="flow">
-          <li><b>You</b> send a brief, a URL or a job post.</li>
-          <li><b>This site</b> runs the quick part right away.</li>
-          <li><b>StarNet</b>, my agent harness, drafts the real work for me to review.</li>
-          <li><b>I</b> review it and reply personally.</li>
-        </ol>
+        <div class="about-grid">
+          <div>
+            <p class="kicker">How I started</p>
+            <h2>Tinkering first. Then building for people.</h2>
+            <div id="about-start"></div>
+          </div>
+          <div>
+            <p class="kicker">What I love to build</p>
+            <ul class="loves" id="loves"></ul>
+          </div>
+        </div>
         <ul class="chips" id="skills"></ul>
-      </div>
-    </section>
-
-    <section class="section" id="services">
-      <header class="section-head">
-        <p class="kicker">Hire me for…</p>
-        <h2>Pick a job. An agent starts the brief.</h2>
-      </header>
-      <div class="grid services" id="service-grid"></div>
-    </section>
-
-    <section class="section" id="lab">
-      <header class="section-head">
-        <p class="kicker">Agent lab</p>
-        <h2>Don't take my word for it. Try them.</h2>
-      </header>
-      <div class="tabs" role="tablist" aria-label="Agent demos">
-        <button class="tab is-active" role="tab" aria-selected="true" aria-controls="tab-audit" id="t-audit">Site audit</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="tab-cover" id="t-cover">Am I a fit?</button>
-      </div>
-
-      <div class="panel lab" id="tab-audit" role="tabpanel" aria-labelledby="t-audit">
-        <p class="lab-lede">Give it any public site. It checks speed, SEO, mobile, accessibility and security headers, then suggests fixes.</p>
-        <form id="audit-form" class="row-form" novalidate>
-          <label class="sr-only" for="audit-url">Website address</label>
-          <input id="audit-url" name="url" type="url" inputmode="url" autocomplete="url" placeholder="yourbusiness.com" required>
-          <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <button class="btn btn-primary" type="submit">Run audit</button>
-        </form>
-        <div id="audit-out" class="out" aria-live="polite"></div>
-      </div>
-
-      <div class="panel lab" id="tab-cover" role="tabpanel" aria-labelledby="t-cover" hidden>
-        <p class="lab-lede">Hiring? Paste your job post. My agent writes an honest fit letter from my real work and picks the projects that matter to you.</p>
-        <form id="cover-form" class="stack-form" novalidate>
-          <label>Company <input name="company" autocomplete="organization" placeholder="Acme Inc. (optional)"></label>
-          <label>Job post <textarea name="posting" rows="7" required placeholder="Paste the full listing here…"></textarea></label>
-          <label>Your email <input name="email" type="email" autocomplete="email" placeholder="So I can follow up (optional)"></label>
-          <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <button class="btn btn-primary" type="submit">Write my fit letter</button>
-        </form>
-        <div id="cover-out" class="out" aria-live="polite"></div>
       </div>
     </section>
 
     <section class="section" id="work">
       <header class="section-head">
         <p class="kicker">Selected work</p>
-        <h2>Things I've built.</h2>
+        <h2>Four things I'm proud of, and how AI helped build them.</h2>
       </header>
       <div class="grid work" id="work-grid"></div>
+      <div class="also">
+        <p class="kicker">Also built</p>
+        <ul id="also-list"></ul>
+      </div>
+    </section>
+
+    <section class="section" id="lab">
+      <header class="section-head">
+        <p class="kicker">AI lab</p>
+        <h2>See how I use AI. Try it on your own site.</h2>
+        <p class="muted lab-intro">This is a small version of how my agents work: code does the fast, exact checks, then an AI reads the results and writes the advice a person would.</p>
+      </header>
+      <div class="tabs" role="tablist" aria-label="AI demos">
+        <button class="tab is-active" role="tab" aria-selected="true" aria-controls="tab-audit" id="t-audit">Site review</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="tab-cover" id="t-cover">Hiring?</button>
+      </div>
+
+      <div class="panel lab" id="tab-audit" role="tabpanel" aria-labelledby="t-audit">
+        <ol class="pipeline" aria-label="What happens">
+          <li><b>Fetch</b> your page like a browser would</li>
+          <li><b>Check</b> 15 things: speed, SEO, mobile, accessibility, security</li>
+          <li><b>Think</b>: an AI ranks the fixes in plain English</li>
+        </ol>
+        <form id="audit-form" class="row-form" novalidate>
+          <label class="sr-only" for="audit-url">Website address</label>
+          <input id="audit-url" name="url" type="url" inputmode="url" autocomplete="url" placeholder="yourbusiness.com" required>
+          <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn btn-primary" type="submit">Review my site</button>
+        </form>
+        <div id="audit-out" class="out" aria-live="polite"></div>
+      </div>
+
+      <div class="panel lab" id="tab-cover" role="tabpanel" aria-labelledby="t-cover" hidden>
+        <p class="lab-lede">Hiring? Paste a job post and an AI will tell you honestly how my work lines up, using only what's on this page.</p>
+        <form id="cover-form" class="stack-form" novalidate>
+          <label>Job post <textarea name="posting" rows="6" required placeholder="Paste the full listing here…"></textarea></label>
+          <div class="two">
+            <label>Company <input name="company" autocomplete="organization" placeholder="Optional"></label>
+            <label>Your email <input name="email" type="email" autocomplete="email" placeholder="Optional, so I can follow up"></label>
+          </div>
+          <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn btn-ghost" type="submit">Check the fit</button>
+        </form>
+        <div id="cover-out" class="out" aria-live="polite"></div>
+      </div>
     </section>
 
     <section class="section" id="contact">
       <div class="panel contact">
         <div>
-          <p class="kicker">Contact</p>
-          <h2>Tell me what you're working on.</h2>
-          <p class="muted">Your message goes straight to my inbox agent. It drafts a reply and a rough scope, and I read and send it myself.</p>
+          <p class="kicker">Say hi</p>
+          <h2>Building something? I'd like to hear about it.</h2>
+          <p class="muted">Messages land with my agents first, so I see a summary right away. I read and answer every one myself.</p>
+          <p class="muted studio-note">Need a website or automation for your business? That's <a href="https://cardinalstudio.ai" target="_blank" rel="noopener">Cardinal Studio</a>.</p>
         </div>
         <form id="contact-form" class="stack-form" novalidate>
           <div class="two">
             <label>Name <input name="name" autocomplete="name" required></label>
             <label>Email <input name="email" type="email" autocomplete="email" required></label>
           </div>
-          <label>Budget
-            <select name="budget"><option value="">Not sure yet</option><option>Under $2k</option><option>$2k–$5k</option><option>$5k–$15k</option><option>$15k+</option></select>
-          </label>
-          <label>Message <textarea name="message" rows="5" required placeholder="What do you need, and by when?"></textarea></label>
+          <label>Message <textarea name="message" rows="5" required placeholder="What are you working on?"></textarea></label>
           <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
           <button class="btn btn-primary" type="submit">Send</button>
           <p class="form-note" aria-live="polite"></p>
@@ -142,24 +145,19 @@
     <span class="muted">Built with Three.js · agents by StarNet</span>
   </footer>
 
-  <!-- Brief sheet for "Hire me for X" (bottom sheet on phones, dialog on desktop) -->
-  <dialog id="brief" class="sheet" aria-labelledby="brief-title">
-    <form id="brief-form" class="stack-form" method="dialog" novalidate>
+  <!-- Project sheet (bottom sheet on phones, dialog on desktop), opened from a card or a 3D node -->
+  <dialog id="sheet" class="sheet" aria-labelledby="sheet-title">
+    <div class="sheet-body">
       <div class="sheet-head">
-        <span class="sheet-swatch" id="brief-swatch"></span>
-        <h3 id="brief-title">Start a brief</h3>
-        <button class="icon-btn" type="button" id="brief-close" aria-label="Close">✕</button>
+        <span class="sheet-swatch"></span>
+        <div class="sheet-titles"><span class="tag" id="sheet-tag"></span><h3 id="sheet-title"></h3></div>
+        <button class="icon-btn" type="button" id="sheet-close" aria-label="Close">✕</button>
       </div>
-      <p class="muted" id="brief-blurb"></p>
-      <div id="brief-fields"></div>
-      <div class="two">
-        <label>Name <input name="name" autocomplete="name" required></label>
-        <label>Email <input name="email" type="email" autocomplete="email" required></label>
-      </div>
-      <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="btn btn-primary" type="submit">Send brief</button>
-      <p class="form-note" aria-live="polite"></p>
-    </form>
+      <p id="sheet-summary"></p>
+      <div class="ai-box"><h4>How AI helped</h4><p id="sheet-ai"></p></div>
+      <div class="stack" id="sheet-stack"></div>
+      <a class="btn btn-primary" id="sheet-link" target="_blank" rel="noopener"></a>
+    </div>
   </dialog>
 
   <script type="module" src="/app.js"></script>
