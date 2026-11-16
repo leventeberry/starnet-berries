@@ -1599,13 +1599,14 @@
       ccAttempts.set(id, { attemptId, controller });
       const earlyCancel = ccListEl.querySelector('.cc-card[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"] button[data-cc-act]');
       if (earlyCancel) { earlyCancel.dataset.ccAct = 'signin-cancel'; earlyCancel.textContent = 'CANCEL'; earlyCancel.disabled = false; }
-      let url, device;
+      let url, device, pasteBack = false;
       try {
         // the CANCEL key's abort rides the request (Harness.api honours the signal); a refusal is said in the station's words
         const startRes = await Harness.api.post('/api/connectors/oauth/start', { id: id, attemptId: attemptId }, { signal: controller.signal, timeoutMs: 120000 });
         const j = startRes.j || {};
         if (!startRes.ok || !j.url) { out.textContent = '✕ ' + (startRes.ok ? 'could not start sign-in' : Harness.api.why(startRes)); sfx('bad'); ccPending.delete(id); ccAttempts.delete(id); ccResetSignBtn(id); return; }
         url = j.url;
+        pasteBack = j.paste === true;   // starnet-berries: the provider only takes a loopback return address
         if (j.deviceFlow) device = j;
       } catch (err) {
         ccPending.delete(id); ccAttempts.delete(id); ccResetSignBtn(id);
@@ -1624,6 +1625,7 @@
       const win = opened.win;   // popup handle when in a browser; null on desktop (opened in the real browser)
       ccPendingWin.set(id, win || null);   // remembered so a CANCEL can close a still-open popup
       out.textContent = 'complete the sign-in for ' + label + (opened.where === 'browser' ? ' in your browser…' : ' in the popup window…');
+      if (pasteBack) ccPasteBack(id, label, out, body);
       // Turn the card's SIGN IN button into a visible CANCEL affordance for the duration of the poll — before this
       // the only way out of a stalled/abandoned sign-in was to wait out the 5-minute cap (EL-11 #13).
       const signBtn = ccListEl.querySelector('.cc-card[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"] button[data-cc-act]');
@@ -1647,6 +1649,34 @@
       }, 2000);
       ccTimers.set(id, timer);
       if (H.scopeOf) H.scopeOf(body).own('cc-signin-' + id, () => { stopCcPoll(id); ccPending.delete(id); ccPendingWin.delete(id); ccAttempts.delete(id); });   // close stops the wait at once
+    }
+    /* starnet-berries: PASTE-BACK. Some providers (Vercel) only accept a loopback return address, which the hosted
+       station's browser can't open. After approving, the browser lands on a page that won't load; its address carries
+       the sign-in code, so the Commander pastes it here and the station finishes the sign-in. The poll above still
+       notices the connector come up. */
+    function ccPasteBack(id, label, out, body) {
+      body.querySelectorAll('.cc-paste[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]').forEach(n => n.remove());
+      const box = document.createElement('section');
+      box.className = 'ext-editor mc-form cc-paste'; box.dataset.id = id;
+      box.innerHTML = '<strong>FINISH ' + esc(label.toUpperCase()) + ' SIGN-IN</strong>' +
+        '<p>After you approve, ' + esc(label) + ' sends you to a page that won’t load (it starts with http://127.0.0.1). That’s expected: copy that page’s full address and paste it here.</p>' +
+        '<input type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="http://127.0.0.1:…/api/connectors/oauth/callback?code=…" aria-label="Address of the page you landed on">' +
+        '<div class="mc-acts"><button class="bb sm" data-cc-paste-go>FINISH SIGN-IN</button></div><p data-cc-paste-status role="status"></p>';
+      out.after(box);
+      const input = box.querySelector('input'), go = box.querySelector('[data-cc-paste-go]'), status = box.querySelector('[data-cc-paste-status]');
+      const submit = async () => {
+        const v = input.value.trim();
+        if (!v) { status.textContent = 'Paste the address first.'; input.focus(); return; }
+        go.disabled = true; status.textContent = 'finishing sign-in…';
+        try {
+          const r = await Harness.api.post('/api/connectors/oauth/paste', { url: v }, { timeoutMs: 120000 });
+          if (r.ok) { status.textContent = '✓ ' + label + ' signed in.'; setTimeout(() => box.remove(), 1500); return; }
+          status.textContent = '✕ ' + Harness.api.why(r);
+        } catch (err) { status.textContent = '✕ ' + ((err && err.message) || 'request failed'); }
+        go.disabled = false;
+      };
+      go.addEventListener('click', submit);
+      input.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); submit(); } });
     }
     async function ccDeviceSignIn(id, out, device, controller) {
       const notice = document.createElement('dialog');

@@ -66,5 +66,4 @@ StarNet uses the owner's own Figma OAuth app (Figma refuses StarNet's automatic 
   `docker compose -p starnet up -d app` from `/opt/starnet` to load them.
 - Agents: CONNECT › ABILITIES → Figma → sign in. Tools: `sidecar/mcp/transport.figma.js`.
   Viewer: the FIGMA window (`frontend/app/windows/figma.js`) embeds any figma.com link. It uses only the client ID.
-- `STARNET_PUBLIC_ORIGIN` (set in `compose.yml`) makes every connector's OAuth redirect use the public site.
-  Without it, sign-ins redirect to `127.0.0.1` and break when StarNet is hosted.
+- The redirect uses `STARNET_PUBLIC_URL` (set in `deploy/Dockerfile`).

@@ -34,6 +34,8 @@ RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 COPY --chown=node:node . .
 ARG BUILD_SHA=unknown
 ENV HOME=/home/node NODE_ENV=production STARNET_BUILD_SHA=$BUILD_SHA
+# OAuth redirect URIs (connectors like Vercel, Spotify) must point at the address the browser uses, not the container's loopback
+ENV STARNET_PUBLIC_URL=https://starnet.leventeberry.me
 EXPOSE 8787
 HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:8787/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

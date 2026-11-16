@@ -18,8 +18,8 @@
   "expectedClaimCount": 37,
   "releaseSurface": {
     "algorithm": "sha256",
-    "sourceCommit": "5140f9f9200033600e773384e43517cacd34ceb9",
-    "pathSetSha256": "9d8bf8dfddb4c0e306c82bed638b70d1c069d25b91df106e442c6a585bfb97d0",
+    "sourceCommit": "0ab28954df7330f84165f0319f6d9125f142bf76",
+    "pathSetSha256": "8dc985299865dc2306ed1bc8ebd72329a0bb5b994133019e5aaa947fd7f3f8e6",
     "files": [
       {
         "path": "INSTALL.md",
@@ -818,8 +818,8 @@
       },
       {
         "path": "frontend/app/places.js",
-        "bytes": 11762,
-        "sha256": "b39f6d844e67ad139e3cb184af57f10f04645126b6354a19d3396f6ea5e87ff5"
+        "bytes": 11623,
+        "sha256": "94b84edbe2172b01d9d280ec752fd84e43d77ef866c7726615c4becc5b27dd07"
       },
       {
         "path": "frontend/app/planpreview.js",
@@ -1448,13 +1448,8 @@
       },
       {
         "path": "frontend/app/windows/connectors.js",
-        "bytes": 165622,
-        "sha256": "e5528a4d0872300e91571b499f67ea82c9323072f36a90d3c17b73c120d23f6b"
-      },
-      {
-        "path": "frontend/app/windows/figma.js",
-        "bytes": 4798,
-        "sha256": "7d874430ad47fade57732c0b673ac66162d7314b721ffce627414b8b99bb9c62"
+        "bytes": 168164,
+        "sha256": "4d76fb7993e9e0fb159037187c33523e3c992dec911fdc9ebcdc5a4b947db71c"
       },
       {
         "path": "frontend/app/windows/logbook.js",
@@ -1913,8 +1908,8 @@
       },
       {
         "path": "frontend/index.html",
-        "bytes": 101865,
-        "sha256": "bf4c83ead2b1f28f69742d4e44d5ed92d71b1bb99365cc5d226837fcde3154d1"
+        "bytes": 101760,
+        "sha256": "b7d657911271fb6498fd764572ba1109c9016c5376ae3013ec490f5e5cf61bf5"
       },
       {
         "path": "frontend/js/arcade.js",

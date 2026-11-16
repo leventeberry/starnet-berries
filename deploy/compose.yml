@@ -12,9 +12,6 @@ services:
   app:
     image: ${STARNET_IMAGE:?set STARNET_IMAGE in .env}
     restart: unless-stopped
-    environment:
-      # OAuth sign-ins (e.g. Figma) must redirect back to the public site, not the container's loopback.
-      STARNET_PUBLIC_ORIGIN: https://starnet.leventeberry.me
     # Secrets the owner creates on the server (never committed), e.g. STARNET_FIGMA_OAUTH_CLIENT_ID/_SECRET.
     # Optional: the stack still starts without it.
     env_file:
