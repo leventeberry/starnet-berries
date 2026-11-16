@@ -1,4 +1,4 @@
-// Everything a visitor reads lives here, so editing copy never means touching the 3D or form code.
+// Everything a visitor reads lives here, so editing copy never means touching the layout or form code.
 // The serverless functions import this too: the fit-letter agent only writes from these facts.
 //
 // DRAFT COPY. Facts come from LeVente's repos (Cardinal Studio, Bean Baron, Chexi, StarNet).
@@ -8,7 +8,12 @@ export const profile = {
   name: 'LeVente Berry',
   role: 'Builder', // DRAFT
   location: 'Columbus, Ohio',
-  headline: 'I build software, games and AI systems, and I use AI to build them faster.', // DRAFT
+  // The big hero line. The word in headlineAccent is set in italic pink.
+  headline: 'I build things people actually use.', // DRAFT
+  headlineAccent: 'actually',
+  intro: 'Games, AI systems and software, mostly with AI as my pair. I live in Columbus, Ohio, and I like shipping more than planning.', // DRAFT
+  now: 'Building Chexi right now', // the green "status" line under the intro
+  photo: '', // e.g. '/img/levente.jpg' (put the file in site/img/). Empty shows your initials instead.
   github: 'https://github.com/leventeberry',
   linkedin: '', // add your LinkedIn URL to show the link
 
@@ -32,21 +37,9 @@ export const profile = {
   ],
 };
 
-// The featured projects. Each one is also a glowing node in the 3D hero.
+// The featured projects, shown as big rows with a screenshot (or a drawn illustration).
 // `ai` is the "how AI was used" line, which is the point of the site.
 export const projects = [
-  {
-    id: 'cardinal',
-    aiShort: 'An AI assistant that answers and qualifies new leads for clients.',
-    name: 'Cardinal Studio',
-    tag: 'My studio',
-    color: '#ff3d55',
-    summary: 'My web and automation studio in Columbus. It builds websites, custom software and AI systems for small businesses.',
-    ai: 'Its flagship is an AI Lead Conversion System: an assistant that answers new leads, qualifies them and hands them to a person. The studio\'s own site, client portal and admin are built with AI agents under a strict review process: every change gets an automated security and correctness review before I approve it.',
-    stack: ['Next.js', 'Bun', 'Postgres', 'AI agents'],
-    url: 'https://cardinalstudio.ai',
-    linkLabel: 'cardinalstudio.ai',
-  },
   {
     id: 'beanbaron',
     aiShort: 'Prototyped with an AI app builder, then grown with coding agents.',
@@ -58,6 +51,22 @@ export const projects = [
     stack: ['React', 'TanStack Start', 'Supabase', 'Postgres'],
     url: 'https://beanbaron.app',
     linkLabel: 'beanbaron.app',
+    image: '',
+    year: 'Game · live', // DRAFT: add the year it launched
+  },
+  {
+    id: 'cardinal',
+    aiShort: 'An AI assistant that answers and qualifies new leads for clients.',
+    name: 'Cardinal Studio',
+    tag: 'My studio',
+    color: '#ff3d55',
+    summary: 'My web and automation studio in Columbus. It builds websites, custom software and AI systems for small businesses.',
+    ai: 'Its flagship is an AI Lead Conversion System: an assistant that answers new leads, qualifies them and hands them to a person. The studio\'s own site, client portal and admin are built with AI agents under a strict review process: every change gets an automated security and correctness review before I approve it.',
+    stack: ['Next.js', 'Bun', 'Postgres', 'AI agents'],
+    url: 'https://cardinalstudio.ai',
+    linkLabel: 'cardinalstudio.ai',
+    image: '', // a real screenshot, e.g. '/img/cardinal.png'. Empty shows a drawn illustration.
+    year: 'Studio · ongoing',
   },
   {
     id: 'chexi',
@@ -70,6 +79,8 @@ export const projects = [
     stack: ['TypeScript', 'LLMs', 'Data pipelines'],
     url: 'https://chexi.ai', // not live yet: going back up on the VPS
     linkLabel: 'chexi.ai',
+    image: '',
+    year: 'Company · now',
   },
 ];
 
@@ -77,5 +88,5 @@ export const projects = [
 export const alsoBuilt = [
   { name: 'StarNet (hosted)', text: 'A multi-agent harness I run on my own server. It powers the forms on this page.', url: 'https://github.com/leventeberry/starnet-berries' },
   { name: 'Hermes Stack', text: 'A self-hosted Traefik, Firecrawl and agent stack with an operator console.', url: '' },
-  { name: 'This site', text: 'Three.js, plain JavaScript and a few serverless functions. No framework.', url: 'https://github.com/leventeberry/starnet-berries/tree/main/portfolio' },
+  { name: 'This site', text: 'Plain JavaScript and a few serverless functions. No framework, no build step.', url: 'https://github.com/leventeberry/starnet-berries/tree/main/portfolio' },
 ];

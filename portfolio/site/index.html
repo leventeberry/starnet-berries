@@ -4,125 +4,114 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>LeVente Berry · Builder</title>
-  <meta name="description" content="LeVente Berry builds software, games and AI systems. See Cardinal Studio, Bean Baron and Chexi, and watch AI review your own site.">
-  <meta name="theme-color" content="#05060f">
+  <meta name="description" content="LeVente Berry builds games, AI systems and software in Columbus, Ohio. See Bean Baron, Cardinal Studio and Chexi, and how AI helped build each one.">
+  <meta name="theme-color" content="#f6f2eb">
   <meta property="og:title" content="LeVente Berry · Builder">
-  <meta property="og:description" content="Software, games and AI systems, and how AI helped build them.">
+  <meta property="og:description" content="Games, AI systems and software, and how AI helped build them.">
   <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='14' fill='%23ff3d6e'/%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%234de1ff' stroke-width='3' stroke-dasharray='6 8'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317140f'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='34' text-anchor='middle' fill='%23f6f2eb'%3ELB%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
-  <script type="importmap">{ "imports": { "three": "/vendor/three.module.min.js" } }</script>
 </head>
 <body>
-  <canvas id="scene" aria-hidden="true"></canvas>
-  <div class="vignette" aria-hidden="true"></div>
+  <div class="wrap">
+    <header class="nav" id="nav">
+      <a class="brand" href="#top">LeVente Berry</a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#work">Work</a>
+        <a href="#story">Story</a>
+        <a href="#lab">AI lab</a>
+        <a href="#contact" class="nav-cta">Say hi <span aria-hidden="true">→</span></a>
+      </nav>
+    </header>
 
-  <header class="nav" id="nav">
-    <a class="brand" href="#top" aria-label="Back to top"><span class="brand-dot"></span>LB</a>
-    <nav class="nav-links" aria-label="Sections">
-      <a href="#about">About</a>
-      <a href="#work" class="nav-hire">Work</a>
-      <a href="#lab">AI lab</a>
-      <a href="#contact" class="nav-cta">Say hi</a>
-    </nav>
-  </header>
-
-  <main id="top">
-    <!-- HERO: the 3D constellation sits behind; each glowing node is a project you can tap. -->
-    <section class="hero" id="hero">
-      <div class="hero-copy">
-        <p class="eyebrow"><span class="pulse" id="agent-pulse"></span><span id="agent-status">Agents online</span></p>
-        <h1 id="hero-name">LeVente Berry</h1>
-        <p class="hero-role" id="hero-role"></p>
-        <p class="hero-lede" id="hero-headline"></p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#work">See what I build</a>
-          <a class="btn btn-ghost" href="#lab">Watch AI work</a>
-        </div>
-      </div>
-      <p class="hero-hint" id="hero-hint">Drag to orbit · tap a project</p>
-      <div class="node-label" id="node-label" hidden></div>
-    </section>
-
-    <section class="section" id="about">
-      <div class="panel about">
-        <div class="about-grid">
-          <div>
-            <p class="kicker">How I started</p>
-            <h2>Tinkering first. Then building for people.</h2>
-            <div id="about-start"></div>
-          </div>
-          <div>
-            <p class="kicker">What I love to build</p>
-            <ul class="loves" id="loves"></ul>
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <h1 id="hero-headline">I build things people <em>actually</em> use.</h1>
+          <p class="lede" id="hero-intro"></p>
+          <p class="hero-meta"><span class="now"><i class="dot"></i><span id="hero-now"></span></span><span id="hero-where"></span></p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#work">See my work</a>
+            <a class="btn btn-ghost" href="#lab">Watch AI work</a>
           </div>
         </div>
-        <ul class="chips" id="skills"></ul>
-      </div>
-    </section>
+        <figure class="portrait" id="portrait" aria-label="LeVente Berry"></figure>
+      </section>
 
-    <section class="section" id="work">
-      <header class="section-head">
-        <p class="kicker">Selected work</p>
-        <h2>Things I'm proud of, and how AI helped build them.</h2>
-      </header>
-      <div class="grid work" id="work-grid"></div>
-      <div class="also">
-        <p class="kicker">Also built</p>
-        <ul id="also-list"></ul>
-      </div>
-    </section>
+      <section class="section" id="work">
+        <p class="kicker">Work</p>
+        <h2>Three things I'm proud of, and how AI helped build them.</h2>
+        <div id="work-list"></div>
+        <div class="also">
+          <p class="kicker">Also built</p>
+          <ul id="also-list"></ul>
+        </div>
+      </section>
 
-    <section class="section" id="lab">
-      <header class="section-head">
-        <p class="kicker">AI lab</p>
-        <h2>See how I use AI. Try it on your own site.</h2>
-        <p class="muted lab-intro">This is a small version of how my agents work: code does the fast, exact checks, then an AI reads the results and writes the advice a person would.</p>
-      </header>
-      <div class="tabs" role="tablist" aria-label="AI demos">
-        <button class="tab is-active" role="tab" aria-selected="true" aria-controls="tab-audit" id="t-audit">Site review</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="tab-cover" id="t-cover">Hiring?</button>
-      </div>
+      <section class="section story" id="story">
+        <div class="story-head">
+          <p class="kicker">How I started</p>
+          <h2>Tinkering first.<br>Then building for people.</h2>
+        </div>
+        <div class="story-body" id="about-start"></div>
+        <div class="loves-wrap">
+          <p class="kicker">What I love to build</p>
+          <ol class="loves" id="loves"></ol>
+          <p class="skills"><span>Tools I reach for:</span> <span id="skills"></span></p>
+        </div>
+      </section>
 
-      <div class="panel lab" id="tab-audit" role="tabpanel" aria-labelledby="t-audit">
-        <ol class="pipeline" aria-label="What happens">
-          <li><b>Fetch</b> your page like a browser would</li>
-          <li><b>Check</b> 15 things: speed, SEO, mobile, accessibility, security</li>
-          <li><b>Think</b>: an AI ranks the fixes in plain English</li>
-        </ol>
-        <form id="audit-form" class="row-form" novalidate>
-          <label class="sr-only" for="audit-url">Website address</label>
-          <input id="audit-url" name="url" type="url" inputmode="url" autocomplete="url" placeholder="yourbusiness.com" required>
-          <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <button class="btn btn-primary" type="submit">Review my site</button>
-        </form>
-        <div id="audit-out" class="out" aria-live="polite"></div>
-      </div>
-
-      <div class="panel lab" id="tab-cover" role="tabpanel" aria-labelledby="t-cover" hidden>
-        <p class="lab-lede">Hiring? Paste a job post and an AI will tell you honestly how my work lines up, using only what's on this page.</p>
-        <form id="cover-form" class="stack-form" novalidate>
-          <label>Job post <textarea name="posting" rows="6" required placeholder="Paste the full listing here…"></textarea></label>
-          <div class="two">
-            <label>Company <input name="company" autocomplete="organization" placeholder="Optional"></label>
-            <label>Your email <input name="email" type="email" autocomplete="email" placeholder="Optional, so I can follow up"></label>
+      <section class="section" id="lab">
+        <div class="lab-head">
+          <div>
+            <p class="kicker">AI lab</p>
+            <h2>See how I use AI. Try it on your own site.</h2>
           </div>
-          <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <button class="btn btn-ghost" type="submit">Check the fit</button>
-        </form>
-        <div id="cover-out" class="out" aria-live="polite"></div>
-      </div>
-    </section>
+          <p class="muted lab-intro">A small version of how my agents work: code does the fast, exact checks, then an AI reads the results and writes the advice a person would. <span class="agent"><i class="dot" id="agent-pulse"></i><span id="agent-status">Checking agents…</span></span></p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="AI demos">
+          <button class="tab is-active" role="tab" aria-selected="true" aria-controls="tab-audit" id="t-audit">Site review</button>
+          <button class="tab" role="tab" aria-selected="false" aria-controls="tab-cover" id="t-cover">Hiring?</button>
+        </div>
 
-    <section class="section" id="contact">
-      <div class="panel contact">
+        <div class="lab" id="tab-audit" role="tabpanel" aria-labelledby="t-audit">
+          <ol class="pipeline" aria-label="What happens">
+            <li><b>Fetch</b> your page like a browser would</li>
+            <li><b>Check</b> 15 things: speed, SEO, mobile, accessibility, security</li>
+            <li><b>Think</b>: an AI ranks the fixes in plain English</li>
+          </ol>
+          <form id="audit-form" class="row-form" novalidate>
+            <label class="sr-only" for="audit-url">Website address</label>
+            <input id="audit-url" name="url" type="url" inputmode="url" autocomplete="url" placeholder="yourbusiness.com" required>
+            <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <button class="btn btn-primary" type="submit">Review my site</button>
+          </form>
+          <div id="audit-out" class="out" aria-live="polite"></div>
+        </div>
+
+        <div class="lab" id="tab-cover" role="tabpanel" aria-labelledby="t-cover" hidden>
+          <p class="lab-lede">Paste a job post and an AI will tell you honestly how my work lines up, using only what's on this page.</p>
+          <form id="cover-form" class="stack-form" novalidate>
+            <label>Job post <textarea name="posting" rows="6" required placeholder="Paste the full listing here…"></textarea></label>
+            <div class="two">
+              <label>Company <input name="company" autocomplete="organization" placeholder="Optional"></label>
+              <label>Your email <input name="email" type="email" autocomplete="email" placeholder="Optional, so I can follow up"></label>
+            </div>
+            <input class="hp" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <button class="btn btn-ghost" type="submit">Check the fit</button>
+          </form>
+          <div id="cover-out" class="out" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="section contact" id="contact">
         <div>
           <p class="kicker">Say hi</p>
-          <h2>Building something? I'd like to hear about it.</h2>
-          <p class="muted">Messages land with my agents first, so I see a summary right away. I read and answer every one myself.</p>
+          <h2 class="big">Building something?</h2>
+          <p class="muted">Tell me about it. Messages land with my agents first, so I see a summary right away, and I answer every one myself.</p>
           <p class="muted studio-note">Need a website or automation for your business? That's <a href="https://cardinalstudio.ai" target="_blank" rel="noopener">Cardinal Studio</a>.</p>
         </div>
         <form id="contact-form" class="stack-form" novalidate>
@@ -135,24 +124,23 @@
           <button class="btn btn-primary" type="submit">Send</button>
           <p class="form-note" aria-live="polite"></p>
         </form>
-      </div>
-    </section>
-  </main>
+      </section>
+    </main>
 
-  <footer class="footer">
-    <span>© <span id="year"></span> LeVente Berry</span>
-    <span class="footer-links" id="footer-links"></span>
-    <span class="muted">Built with Three.js · agents by StarNet</span>
-  </footer>
+    <footer class="footer">
+      <span>© <span id="year"></span> LeVente Berry</span>
+      <span class="footer-links" id="footer-links"></span>
+      <span class="muted">Plain JavaScript · agents by StarNet</span>
+    </footer>
+  </div>
 
-  <!-- Project sheet (bottom sheet on phones, dialog on desktop), opened from a card or a 3D node -->
   <dialog id="sheet" class="sheet" aria-labelledby="sheet-title">
     <div class="sheet-body">
       <div class="sheet-head">
-        <span class="sheet-swatch"></span>
         <div class="sheet-titles"><span class="tag" id="sheet-tag"></span><h3 id="sheet-title"></h3></div>
         <button class="icon-btn" type="button" id="sheet-close" aria-label="Close">✕</button>
       </div>
+      <div class="sheet-shot" id="sheet-shot"></div>
       <p id="sheet-summary"></p>
       <div class="ai-box"><h4>How AI helped</h4><p id="sheet-ai"></p></div>
       <div class="stack" id="sheet-stack"></div>

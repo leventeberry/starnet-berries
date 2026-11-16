@@ -2,7 +2,7 @@
   "name": "leventeberry-portfolio",
   "private": true,
   "type": "module",
-  "description": "LeVente Berry's interactive 3D portfolio, with agent-powered tools wired to StarNet.",
+  "description": "LeVente Berry's portfolio, with agent-powered tools wired to StarNet.",
   "scripts": {
     "dev": "node dev-server.mjs",
     "check": "node --check dev-server.mjs && for f in api/*.js site/*.js; do node --check $f || exit 1; done"

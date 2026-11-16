@@ -1,6 +1,6 @@
 # leventeberry.me portfolio
 
-A personal builder portfolio: a 3D hero (Three.js) where each node is a featured project, "how AI helped" write-ups,
+A personal builder portfolio in a light, editorial style: who I am, three featured projects with "how AI helped" write-ups,
 a live AI site review, and a contact form that hands messages to StarNet.
 Static site in `site/`, Vercel functions in `api/`. No build step.
 
@@ -44,10 +44,13 @@ npm run dev            # http://localhost:3000, reads .env.local if present
 ## Deploy (Vercel)
 
 Import this repo in Vercel with **Root Directory = `portfolio`** (framework: Other). `vercel.json` serves `site/`,
-sets security headers (including a CSP; if you change the inline import map in `index.html`, update its hash), and
+sets security headers (including a CSP that allows no inline scripts), and
 gives functions 60 s. Then add `leventeberry.me` under Project → Domains and point DNS where Vercel says.
 
 ## Editing
 
 All copy (bio, how I started, what I love to build, the featured projects and how AI helped each) is in `site/content.js`. Lines marked `DRAFT` are guesses to rewrite. The fit-letter agent only uses facts
-from that file, so keep it accurate. `site/scene.js` is the 3D hero; `site/styles.css` holds the colors at the top.
+from that file, so keep it accurate. `site/styles.css` holds the colors at the top.
+
+Photos: put your portrait and real project screenshots in `site/img/` and set `profile.photo` and each project's
+`image` in `content.js`. Until then the page shows your initials and a drawn illustration (`site/visuals.js`) for each project.

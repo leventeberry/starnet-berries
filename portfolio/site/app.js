@@ -1,28 +1,48 @@
 import { profile, projects, alsoBuilt } from './content.js';
+import { visuals } from './visuals.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // ---------- content ----------
-$('#hero-role').textContent = profile.role + (profile.location ? ` · ${profile.location}` : '');
-$('#hero-headline').textContent = profile.headline;
+const shot = (p) => (p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)} screenshot" loading="lazy">` : visuals[p.id] || '');
+{
+  const h = esc(profile.headline);
+  const acc = profile.headlineAccent && esc(profile.headlineAccent);
+  $('#hero-headline').innerHTML = acc && h.includes(acc) ? h.replace(acc, `<em>${acc}</em>`) : h;
+}
+$('#hero-intro').textContent = profile.intro || '';
+$('#hero-now').textContent = profile.now || '';
+$('#hero-now').parentElement.hidden = !profile.now;
+$('#hero-where').textContent = profile.location || '';
+const initials = profile.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2);
+$('#portrait').innerHTML = profile.photo
+  ? `<img src="${esc(profile.photo)}" alt="${esc(profile.name)}">`
+  : `<span class="mono" aria-hidden="true">${esc(initials)}</span>`;
 $('#about-start').innerHTML = profile.start.map((p) => `<p>${esc(p)}</p>`).join('');
 $('#loves').innerHTML = profile.loves.map((l) => `<li><b>${esc(l.title)}</b><span>${esc(l.text)}</span></li>`).join('');
-$('#skills').innerHTML = profile.skills.map((s) => `<li>${esc(s)}</li>`).join('');
+$('#skills').textContent = profile.skills.join(' · ');
 $('#year').textContent = new Date().getFullYear();
 $('#footer-links').innerHTML = [
   profile.github && `<a href="${esc(profile.github)}" target="_blank" rel="noopener">GitHub</a>`,
   profile.linkedin && `<a href="${esc(profile.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>`,
 ].filter(Boolean).join('');
 
-$('#work-grid').innerHTML = projects.map((p, i) => `
-  <button class="proj reveal" style="--c:${p.color}" data-project="${p.id}">
-    <span class="num">0${i + 1} /</span>
-    <span class="tag">${esc(p.tag)}</span><h3>${esc(p.name)}</h3><p>${esc(p.summary)}</p>
-    <span class="ai-line"><b>AI</b> ${esc(p.aiShort)}</span>
-    <span class="go">How it was built</span>
-  </button>`).join('');
-$('#also-list').innerHTML = alsoBuilt.map((x) => `<li>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>` : `<b>${esc(x.name)}</b>`}<span>${esc(x.text)}</span></li>`).join('');
+$('#work-list').innerHTML = projects.map((p) => `
+  <article class="proj reveal" style="--c:${p.color}">
+    <div class="proj-copy">
+      <p class="proj-meta">${esc(p.year || p.tag)}</p>
+      <h3>${esc(p.name)}</h3>
+      <p>${esc(p.summary)}</p>
+      <p class="ai-line"><b>How AI helped:</b> ${esc(p.aiShort)}</p>
+      <div class="proj-actions">
+        <button class="link-btn" type="button" data-project="${p.id}">The full story <span aria-hidden="true">→</span></button>
+        ${p.url ? `<a class="link-btn muted" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.linkLabel || 'Visit')} ↗</a>` : ''}
+      </div>
+    </div>
+    <button class="proj-shot" type="button" data-project="${p.id}" aria-label="More about ${esc(p.name)}">${shot(p)}</button>
+  </article>`).join('');
+$('#also-list').innerHTML = alsoBuilt.map((x) => `<li>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)} ↗</a>` : `<b>${esc(x.name)}</b>`}<span>${esc(x.text)}</span></li>`).join('');
 
 // ---------- api ----------
 async function post(path, body) {
@@ -37,10 +57,10 @@ let status = { leads: false, audit: { ai: false }, cover: { ai: false }, contact
 fetch('/api/status').then((r) => r.json()).then((s) => {
   status = s;
   const live = s.leads || s.audit?.ai;
-  $('#agent-status').textContent = live ? 'Agents online' : 'Agents warming up';
+  $('#agent-status').textContent = live ? 'My agents are online.' : 'My agents are offline right now, so this runs the checks only.';
   $('#agent-pulse').classList.toggle('is-off', !live);
 }).catch(() => {
-  $('#agent-status').textContent = 'Agents offline (preview)';
+  $('#agent-status').textContent = 'My agents are offline right now.';
   $('#agent-pulse').classList.add('is-off');
 });
 
@@ -59,13 +79,13 @@ export function openProject(id) {
   $('#sheet-tag').textContent = p.tag;
   $('#sheet-title').textContent = p.name;
   $('#sheet-summary').textContent = p.summary;
+  $('#sheet-shot').innerHTML = shot(p);
   $('#sheet-ai').textContent = p.ai;
   $('#sheet-stack').innerHTML = p.stack.map((x) => `<span>${esc(x)}</span>`).join('');
   const link = $('#sheet-link');
   link.hidden = !p.url;
   if (p.url) { link.href = p.url; link.textContent = `Visit ${p.linkLabel || p.name} ↗`; }
   sheet.showModal();
-  scene?.pulse(id);
 }
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-project]');
@@ -205,34 +225,8 @@ coverForm.addEventListener('submit', async (e) => {
 
 // ---------- nav + reveal ----------
 const nav = $('#nav');
-const onScroll = () => {
-  nav.classList.toggle('is-solid', scrollY > 40);
-  $('#hero-hint').style.opacity = scrollY > 40 ? 0 : '';
-};
+const onScroll = () => nav.classList.toggle('is-solid', scrollY > 20);
 addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); } }), { threshold: 0.12 });
-document.querySelectorAll('.panel, .section-head, .reveal').forEach((el) => { el.classList.add('reveal'); io.observe(el); });
-
-// ---------- 3D (loaded last so the page works even if WebGL doesn't) ----------
-let scene = null;
-const label = $('#node-label');
-function showLabel(id, x, y) {
-  const svc = projects.find((s) => s.id === id);
-  if (!svc) { label.hidden = true; return; }
-  label.textContent = svc.name;
-  label.style.left = `${x}px`; label.style.top = `${y}px`; label.style.borderColor = svc.color;
-  label.hidden = false;
-}
-try {
-  const { createScene } = await import('./scene.js');
-  scene = createScene($('#scene'), {
-    nodes: projects,
-    onSelect: (id) => { label.hidden = true; openProject(id); },
-    onHover: (id, x, y) => (id ? showLabel(id, x, y) : (label.hidden = true)),
-  });
-} catch (err) {
-  console.warn('3D scene unavailable:', err);
-  $('#hero-hint').hidden = true;
-  document.body.style.background = 'radial-gradient(80% 60% at 70% 30%, #2a0f2a, #05060f 70%)';
-}
+document.querySelectorAll('.reveal').forEach((el) => io.observe(el));

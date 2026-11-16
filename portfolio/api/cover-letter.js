@@ -4,7 +4,7 @@ import { json, readJson, clean, isEmail, isBot, rateLimit, sendToStarNet, hasCla
 import { profile, projects, alsoBuilt } from '../site/content.js';
 
 const facts = JSON.stringify({
-  name: profile.name, role: profile.role, location: profile.location, headline: profile.headline,
+  name: profile.name, role: profile.role, location: profile.location, headline: profile.headline, intro: profile.intro,
   background: profile.start, loves: profile.loves, skills: profile.skills,
   projects: projects.map(({ name, tag, summary, ai, stack }) => ({ name, tag, summary, howAiWasUsed: ai, stack })),
   alsoBuilt: alsoBuilt.map(({ name, text }) => ({ name, text })),
