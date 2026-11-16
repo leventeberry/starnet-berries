@@ -18,7 +18,7 @@
   "expectedClaimCount": 37,
   "releaseSurface": {
     "algorithm": "sha256",
-    "sourceCommit": "7664d1d0c3c9997ed0760d0a2e10e9910ed87916",
+    "sourceCommit": "e3ea3e23204af58cca79847e3510e690eec3d0ce",
     "pathSetSha256": "8dc985299865dc2306ed1bc8ebd72329a0bb5b994133019e5aaa947fd7f3f8e6",
     "files": [
       {
@@ -548,8 +548,8 @@
       },
       {
         "path": "frontend/app/glass-demo.js",
-        "bytes": 14553,
-        "sha256": "15e39663590648e9a861af2a7329da3f52c7ec14c810899f2e8456a99a743d6a"
+        "bytes": 14792,
+        "sha256": "faf84387c08ea50ebcd1666868718c9b7b8cb2356117078539ae83b425b2d768"
       },
       {
         "path": "frontend/app/glossary.js",
@@ -728,8 +728,8 @@
       },
       {
         "path": "frontend/app/mobile.js",
-        "bytes": 4837,
-        "sha256": "1ab0dd69156dabad8f7117b2e0750abe9197e240737eccd6f0202fdf15745eef"
+        "bytes": 7666,
+        "sha256": "9a42b98a545629b030e6b1d30bc87b28f8679e9338112b6a3b4c835e249eddf5"
       },
       {
         "path": "frontend/app/modeldock.js",
@@ -1683,8 +1683,8 @@
       },
       {
         "path": "frontend/css/glass-comms.css",
-        "bytes": 26372,
-        "sha256": "b83c958fc6318594e884e79fb4a458516739e02d078182344e879f0d381bba9d"
+        "bytes": 26708,
+        "sha256": "9fc1016eda1515e82b24c590150f0a21b040b566bacf4933860ab5604415017e"
       },
       {
         "path": "frontend/css/glass-demo.css",
@@ -1908,8 +1908,8 @@
       },
       {
         "path": "frontend/index.html",
-        "bytes": 101682,
-        "sha256": "a254e249d365fda579a4aa455cdd81d18806d047059c9283041fe5fdd40b8048"
+        "bytes": 101760,
+        "sha256": "b7d657911271fb6498fd764572ba1109c9016c5376ae3013ec490f5e5cf61bf5"
       },
       {
         "path": "frontend/js/arcade.js",
@@ -1938,8 +1938,8 @@
       },
       {
         "path": "frontend/mobile.css",
-        "bytes": 625,
-        "sha256": "9e61e5f7158a452cedf94279590bf63b99784af541e419335f32c83015f6f585"
+        "bytes": 7179,
+        "sha256": "c6e42b5c18a65602677ecdb2ca55a300e9034c65b6025677a21bc280234d5087"
       },
       {
         "path": "frontend/plugin-kit/kit.css",

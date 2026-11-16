@@ -101,4 +101,58 @@
   }
   document.addEventListener('touchend', end, opt);
   document.addEventListener('touchcancel', end, opt);
+  // ---- COMMS full screen (phones) ----------------------------------------
+  // The stacked phone layout leaves the transcript a few lines tall. Tapping into the
+  // message box lifts COMMS over the whole screen (mobile.css body.sn-comms-full); the
+  // header key toggles it either way. Leaving it is always explicit: a dismissed
+  // keyboard blurs the box, and that must not fold away the reply being read.
+  var narrow = window.matchMedia ? window.matchMedia('(max-width: 760px)') : { matches: false };
+  var vv = window.visualViewport;
+  function fitViewport() {
+    var b = document.body;
+    if (!b || !b.classList.contains('sn-comms-full') || !vv) return;
+    // the body is zoomed (TEXT SIZE), so visual px -> the panel's own px
+    var z = parseFloat(getComputedStyle(b).zoom) || 1;
+    b.style.setProperty('--sn-vvh', (vv.height / z) + 'px');
+    b.style.setProperty('--sn-vvt', (vv.offsetTop / z) + 'px');
+  }
+  function setCommsFull(on) {
+    var b = document.body;
+    if (!b) return;
+    on = !!on && narrow.matches;
+    b.classList.toggle('sn-comms-full', on);
+    if (!on) { b.style.removeProperty('--sn-vvh'); b.style.removeProperty('--sn-vvt'); }
+    fitViewport();
+    var key = document.getElementById('comms-full');
+    if (key) {
+      key.textContent = on ? '⤡' : '⤢';
+      key.setAttribute('aria-pressed', on ? 'true' : 'false');
+      key.setAttribute('aria-label', on ? 'Shrink COMMS' : 'Expand COMMS to full screen');
+      key.title = on ? 'Shrink COMMS' : 'Expand COMMS to full screen';
+    }
+    if (on) {
+      var log = document.getElementById('chat-log');
+      if (log) requestAnimationFrame(function () { log.scrollTop = log.scrollHeight; });
+    }
+  }
+  function mountCommsFull() {
+    var right = document.querySelector('#chat-panel h3 .h3-right');
+    if (!right || document.getElementById('comms-full')) return;
+    var key = document.createElement('button');
+    key.id = 'comms-full'; key.type = 'button'; key.setAttribute('data-no-tip', '');
+    key.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      setCommsFull(!document.body.classList.contains('sn-comms-full'));
+    });
+    right.appendChild(key);
+    setCommsFull(false);
+    document.addEventListener('focusin', function (e) {
+      if (e.target && e.target.id === 'chat-input' && narrow.matches) setCommsFull(true);
+    });
+    if (vv) { vv.addEventListener('resize', fitViewport); vv.addEventListener('scroll', fitViewport); }
+    var onNarrow = function () { if (!narrow.matches) setCommsFull(false); };
+    if (narrow.addEventListener) narrow.addEventListener('change', onNarrow); else if (narrow.addListener) narrow.addListener(onNarrow);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountCommsFull);
+  else mountCommsFull();
 })();

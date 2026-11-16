@@ -203,6 +203,9 @@ body.glass-demo #model-dock .model-dock-foot :is(button,a) {
 body.glass-demo #model-dock .model-dock-foot :is(button,a):is(:hover,:focus-visible) { color: var(--ph-bright); background: var(--gd-hover); }
 /* a short COMMS: the riser covers the agent header, so its row is lifted over the header's z 6 (glass-comms.js FIT LAW) */
 body.glass-demo #chat-panel.comms-pop-over #chat-inputrow { z-index: 7; }
+/* …but a first-run OFFER panel (dialogue.js, z 30) beats that: the composer must ride over it (app.css .fnv-offer-host), or the
+   model picker rising from it paints UNDER the offer card (phone shot 11-16: the model list hidden behind "Start this task"). */
+body.glass-demo #chat-panel.fnv-offer-host #chat-inputrow { z-index: 31; }
 body.glass-demo .gd-agent-menu { position: absolute; top: calc(100% + 5px); left: 7px; right: 7px; z-index: 90; padding: 5px; max-height: min(260px,var(--comms-fit,260px)); overflow-y: auto; }
 body.glass-demo .gd-agent-option { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 9px; font: 16px/1.2 'VT323',monospace; text-align: left; color: var(--ph); background: transparent; border: 1px solid transparent; border-radius: 3px; }
 body.glass-demo .gd-agent-option[aria-selected="true"] { background: rgba(var(--ph-rgb),.09); border-color: var(--gd-edge); color: var(--ph-bright); box-shadow: inset 2px 0 0 var(--ph); }
