@@ -47,3 +47,11 @@ npm ci
 npm start                      # http://127.0.0.1:8787
 docker build -f deploy/Dockerfile -t starnet:dev .   # same image CI builds
 ```
+
+## Claude Code provider
+
+The image includes the Claude Code CLI (`CLAUDE_CODE_VERSION` in `deploy/Dockerfile`), so the
+CLAUDE CODE provider runs it inside the container. To sign in, pick CLAUDE CODE, press
+SIGN IN WITH CLAUDE, open the sign-in page, sign in on claude.com and paste the code it shows
+back into StarNet. The sign-in is stored in `/home/node/.claude` on the `starnet_home` volume.
+The CLI's self-updater is off; bump `CLAUDE_CODE_VERSION` to update it.
