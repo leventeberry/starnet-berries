@@ -126,7 +126,9 @@
     // NOTIFICATIONS stays a short sheet: it is a log you glance at.
     const reading = w.classList.contains('console') && !w.classList.contains('notifs-win');
     const preferred = catalog ? Math.max(available * .75, w.offsetHeight - catalog.offsetHeight + 260) : page ? available * .82 : work ? available * .8 : roster ? Math.max(available * .8, rosterNeed) : reading ? available * .8 : available * .56;
-    const h = s.expanded ? available : Math.min(available, Math.max(220, s.height || preferred));
+    // starnet-berries: on a phone every sheet opens at the full band; at 56-80% of a phone's band a page shows a few lines.
+    const phone = (window.matchMedia && window.matchMedia('(max-width: 760px)').matches);
+    const h = s.expanded || (phone && !s.height) ? available : Math.min(available, Math.max(220, s.height || preferred));
     w.style.animation = 'none'; w.style.transform = 'none';
     const geometry = {left:b.x+'px',top:(b.bottom-h)+'px',width:b.width+'px',height:h+'px',maxWidth:b.width+'px',maxHeight:available+'px'};
     Object.entries(geometry).forEach(([key,value]) => { if(w.style[key] !== value) w.style[key] = value; });
