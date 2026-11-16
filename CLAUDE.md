@@ -18,7 +18,8 @@ browser-mode constraints). Upstream's own docs are in `docs/`.
   usual conflict hotspot, so keep our changes there small and well-marked.
 
 ## Fork-specific code (keep these when merging upstream)
-- `frontend/mobile.js`, `frontend/mobile.css` and their tags in `frontend/index.html`:
+- `frontend/app/mobile.js`, `frontend/mobile.css` and their tags in `frontend/index.html` (the script tag goes right
+  after `app/bootguard.js`, which `test/bootguard.test.js` requires to be the first script):
   zoom lock and touch controls (touch → the mouse/wheel events `frontend/app/world.js`
   already handles).
 - `deploy/` and `.github/workflows/deploy-image.yml`.

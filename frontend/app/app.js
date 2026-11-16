@@ -2606,22 +2606,22 @@ const App = (() => {
       const sh = el('claude-cli-shell'); if (sh) sh.textContent = ic.shell;
     }
   }
-  let claudeCliLastHttp = 0;   // starnet-berries: HTTP status of the last reply that was not JSON (0 = no reply at all)
+  let claudeCliLastReply = null;   // starnet-berries: the last reply that was not JSON (null = no reply at all)
   async function claudeCliCall(verb, body) {
-    claudeCliLastHttp = 0;
+    claudeCliLastReply = null;
     try {
       const r = await fetch('/api/auth/claude-cli/' + verb, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      claudeCliLastHttp = r.status;
+      claudeCliLastReply = r;
       return await r.json();
     } catch (_) { return null; }
   }
-  // starnet-berries: say WHY the check failed. Behind a login proxy (Authelia) an expired session answers 401/302 with
-  // a login page instead of JSON, and a page the station kept its key from gets 403 — both used to read as "offline".
+  // starnet-berries: say WHY the check failed. Behind a login proxy (Authelia) an expired session answers with a login
+  // page instead of JSON, and a page the station kept its key from is refused — both used to read as "offline".
   function claudeCliUnreachableText() {
-    const h = claudeCliLastHttp;
-    if (h === 401 || h === 302) return '○ couldn’t check Claude Code — your login to this site has expired (HTTP ' + h + '). Reload the page, then press CHECK AGAIN.';
-    if (h === 403) return '○ couldn’t check Claude Code — the station refused this page (HTTP 403). Reload the page, then press CHECK AGAIN.';
-    if (h) return '○ couldn’t check Claude Code — the station answered HTTP ' + h + ' — press CHECK AGAIN.';
+    const r = claudeCliLastReply;
+    const f = (r && Harness.classifyApiFailure) ? Harness.classifyApiFailure(r) : null;
+    if (f && f.message) return '○ couldn’t check Claude Code — ' + f.message + '. If this site has a login, reload the page to sign in again, then press CHECK AGAIN.';
+    if (r) return '○ couldn’t check Claude Code — the station sent an unreadable answer (HTTP ' + r.status + '). Reload the page, then press CHECK AGAIN.';
     return '○ couldn’t check Claude Code right now (no answer from the station) — press CHECK AGAIN.';
   }
   function claudeCliWho(j) {
