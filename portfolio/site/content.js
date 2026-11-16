@@ -1,7 +1,7 @@
 // Everything a visitor reads lives here, so editing copy never means touching the 3D or form code.
 // The serverless functions import this too: the fit-letter agent only writes from these facts.
 //
-// DRAFT COPY. Facts come from LeVente's repos (Cardinal Studio, Bean Baron, Chexi, Chexi Fidelity, StarNet).
+// DRAFT COPY. Facts come from LeVente's repos (Cardinal Studio, Bean Baron, Chexi, StarNet).
 // Lines marked "DRAFT:" are my wording of things I couldn't verify. LeVente, rewrite them in your own voice.
 
 export const profile = {
@@ -32,7 +32,7 @@ export const profile = {
   ],
 };
 
-// The four featured projects. Each one is also a glowing node in the 3D hero.
+// The featured projects. Each one is also a glowing node in the 3D hero.
 // `ai` is the "how AI was used" line, which is the point of the site.
 export const projects = [
   {
@@ -68,24 +68,12 @@ export const projects = [
     summary: 'My software company. Chexi builds intelligence systems that help people monitor complex environments, spot the signals that matter and make better decisions.',
     ai: 'AI is the product here, not just the tool. Its products, Solbase and Civora, turn messy, fast-moving data into clear signals.', // DRAFT: add a line on what each one does
     stack: ['TypeScript', 'LLMs', 'Data pipelines'],
-    url: '', // add https://chexi.ai when it's live
-    linkLabel: '',
-  },
-  {
-    id: 'fidelity',
-    aiShort: 'AI checking AI: daily probes that catch providers drifting.',
-    name: 'Chexi Fidelity',
-    tag: 'In progress',
-    color: '#a98bff',
-    summary: 'An independent monitor for AI inference providers. Daily outside-in checks of open-model providers, with alerts when a provider quietly drifts from the model it claims to serve.',
-    ai: 'This is AI checking AI: it will send the same probes to each provider every day, score the answers against the reference model and flag drift. Built with coding agents on a TypeScript and Postgres stack.',
-    stack: ['TypeScript', 'TanStack Start', 'Postgres'],
-    url: '', // pre-launch: add the link when it's announced
-    linkLabel: '',
+    url: 'https://chexi.ai', // not live yet: going back up on the VPS
+    linkLabel: 'chexi.ai',
   },
 ];
 
-// Smaller things, shown as a compact list under the featured four.
+// Smaller things, shown as a compact list under the featured projects.
 export const alsoBuilt = [
   { name: 'StarNet (hosted)', text: 'A multi-agent harness I run on my own server. It powers the forms on this page.', url: 'https://github.com/leventeberry/starnet-berries' },
   { name: 'Hermes Stack', text: 'A self-hosted Traefik, Firecrawl and agent stack with an operator console.', url: '' },

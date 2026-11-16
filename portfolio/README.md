@@ -49,5 +49,5 @@ gives functions 60 s. Then add `leventeberry.me` under Project → Domains and p
 
 ## Editing
 
-All copy (bio, how I started, what I love to build, the four projects and how AI helped each) is in `site/content.js`. Lines marked `DRAFT` are guesses to rewrite. The fit-letter agent only uses facts
+All copy (bio, how I started, what I love to build, the featured projects and how AI helped each) is in `site/content.js`. Lines marked `DRAFT` are guesses to rewrite. The fit-letter agent only uses facts
 from that file, so keep it accurate. `site/scene.js` is the 3D hero; `site/styles.css` holds the colors at the top.
