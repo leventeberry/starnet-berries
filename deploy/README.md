@@ -61,7 +61,7 @@ StarNet uses the owner's own Figma OAuth app (Figma refuses StarNet's automatic 
 - In the Figma app's settings, add the redirect URL
   `https://starnet.leventeberry.me/api/connectors/oauth/callback`, and under **Embed API** add the embed origin
   `https://starnet.leventeberry.me`.
-- On the server, put the app credentials in `/opt/starnet/.figma.env` (`chmod 600`, never committed):
+- On the server, put the app credentials in `/opt/starnet/figma.env` (`chmod 600`, never committed):
   `STARNET_FIGMA_OAUTH_CLIENT_ID=...` and `STARNET_FIGMA_OAUTH_CLIENT_SECRET=...`, then
   `docker compose -p starnet up -d app` from `/opt/starnet` to load them.
 - Agents: CONNECT › ABILITIES → Figma → sign in. Tools: `sidecar/mcp/transport.figma.js`.
