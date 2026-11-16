@@ -17494,7 +17494,7 @@ async function handleConnectorDevicePoll(req, res) {
    runs the real callback with that query, so the CSRF `state` is still the fence (an unknown state finishes nothing). */
 async function handleConnectorOauthPaste(req, res) {
   let body = {};
-  try { body = JSON.parse(await readBody(req, 8192)) || {}; } catch (_) {}
+  try { body = JSON.parse(await readBody(req, 8192)) || {}; } catch (e) { failNote('connector.oauth.paste-body', e); }   // starnet-berries: the fail-open ratchet; a bad body falls through to the 400 below
   const send = (code, o) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
   let u;
   try { u = new URL(String((body && body.url) || '').trim()); } catch (_) { return send(400, { error: 'paste the full address of the page you landed on' }); }

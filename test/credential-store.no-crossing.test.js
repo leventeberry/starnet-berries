@@ -669,7 +669,7 @@ const DIALERS = {
 };
 // what these send is not a provider key; each has its own store (the plan's notDoing)
 const NOT_PROVIDER_KEYS = ['sidecar/channels/matrix.transport.js', 'sidecar/channels/slack.transport.js', 'sidecar/credits-link.js', 'sidecar/credits.js', 'sidecar/maps/community.js',
-  'sidecar/mcp/account.js', 'sidecar/mcp/github-device.js', 'sidecar/mcp/transport.google.js', 'sidecar/mcp/transport.http.js', 'sidecar/tools/builtin/keys.js', 'sidecar/tools/builtin/spotify.js', 'sidecar/userprops.js'];
+  'sidecar/mcp/account.js', 'sidecar/mcp/github-device.js', 'sidecar/mcp/transport.google.js', 'sidecar/mcp/transport.figma.js', 'sidecar/mcp/transport.http.js', 'sidecar/tools/builtin/keys.js', 'sidecar/tools/builtin/spotify.js', 'sidecar/userprops.js'];
 const NOT_PROVIDER_SITES = ['sidecar/tools/builtin/web.js jinaFetch'];   // the KEYS tab's Jina key
 const DIALS = /\bselectProvider\(\{|['"`]Bearer ['"`]\s*\+|['"]x-api-key['"]\s*\]?\s*[:=]|['"]x-goog-api-key['"]\s*\]?\s*[:=]/;
 /* THE PAIR RULE. A top-level index.js function that reads a provider's key also reads the endpoint for that same provider, so a
