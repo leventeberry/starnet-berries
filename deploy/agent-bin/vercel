@@ -1,0 +1,4 @@
+#!/bin/sh
+# Use the StarNet KEYS-tab "Vercel" entry (VERCEL_API_KEY) unless a token is already set.
+if [ -z "$VERCEL_TOKEN" ] && [ -n "$VERCEL_API_KEY" ]; then VERCEL_TOKEN="$VERCEL_API_KEY"; export VERCEL_TOKEN; fi
+exec /opt/vercel-cli/bin/vercel "$@"

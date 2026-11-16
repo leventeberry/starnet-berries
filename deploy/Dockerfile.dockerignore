@@ -8,3 +8,4 @@ output
 src-tauri
 node_modules
 deploy
+!deploy/agent-bin
