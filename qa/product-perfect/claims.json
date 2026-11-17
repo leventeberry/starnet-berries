@@ -18,7 +18,7 @@
   "expectedClaimCount": 37,
   "releaseSurface": {
     "algorithm": "sha256",
-    "sourceCommit": "4fea19797d06363c41bcd38ba8713726cab86d09",
+    "sourceCommit": "8f4865dfe01e35a99748d964fef40484fd263c76",
     "pathSetSha256": "9d8bf8dfddb4c0e306c82bed638b70d1c069d25b91df106e442c6a585bfb97d0",
     "files": [
       {
@@ -883,8 +883,8 @@
       },
       {
         "path": "frontend/app/prop-catalog-data.js",
-        "bytes": 129523,
-        "sha256": "0dfa9def52f8b744fc9186ea131a202052a7df9759a1c5751839e93b1cad4401"
+        "bytes": 130188,
+        "sha256": "5969f557f11627b5e347a08d05085bc110b87f3182174d762a0c4f0693712efe"
       },
       {
         "path": "frontend/app/prop-catalog-fixture.js",
@@ -918,8 +918,8 @@
       },
       {
         "path": "frontend/app/propsprites.js",
-        "bytes": 819363,
-        "sha256": "33a89d680272a1eb27b287b3a20e9a676ab04f1582446c9fcb867437c077f9c5"
+        "bytes": 819380,
+        "sha256": "6bf4853a5544b8ac0cf78233259993264a95f6f947a7d11c9933db6a7907349e"
       },
       {
         "path": "frontend/app/prospect.js",
