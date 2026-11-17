@@ -1797,15 +1797,21 @@ const WorkflowPanel = (() => {
     const cur = { field: p.field || 'tag', routes: (p.routes && typeof p.routes === 'object') ? Object.assign({}, p.routes) : {}, def: p.def || null };
     const FIELD_RE = /^[A-Za-z0-9_$-]{1,40}(?:\[\d{1,4}\]|\.[A-Za-z0-9_$-]{1,40}){0,7}$/;
     const selOf = c => (c === '__def__' ? cur.def : cur.routes[c]);
-    const chipsFor = c => lanes.length ? lanes.map(l => '<button type="button" class="wf-chip" data-scase="' + esc(c) + '" data-sdir="' + l.dir + '" aria-pressed="' + (selOf(c) === l.dir) + '">' + esc(laneName(f, l, false)) + '</button>').join('') : '<span class="dim">no belt out yet</span>';
+    // two belts that end at machines of the same name (two OUTBOXes) are told apart by the side they leave from
+    const ARROW = { N: '↑ ', E: '→ ', S: '↓ ', W: '← ' }, laneNames = lanes.map(l => laneName(f, l, false));
+    const chipName = (l, i) => (laneNames.indexOf(laneNames[i]) !== laneNames.lastIndexOf(laneNames[i]) ? (ARROW[l.dir] || '') : '') + laneNames[i];
+    const chipsFor = c => lanes.length ? lanes.map((l, i) => '<button type="button" class="wf-chip" data-scase="' + esc(c) + '" data-sdir="' + l.dir + '" aria-pressed="' + (selOf(c) === l.dir) + '">' + esc(chipName(l, i)) + '</button>').join('') : '<span class="dim">no belt out yet</span>';
     const cases = Object.keys(cur.routes);
-    const rows = cases.map(c => '<div class="wf-route"><span class="wf-route-k">' + esc(c) + '<small>' + esc(cur.field) + ' = ' + esc(c) + '</small></span><span class="wf-chips">' + chipsFor(c)
+    const rows = cases.map(c => '<div class="wf-route"><span class="wf-route-k">' + esc(c) + '<small><span data-swf>' + esc(cur.field) + '</span> = ' + esc(c) + '</small></span><span class="wf-chips">' + chipsFor(c)
         + '<button type="button" class="wf-chip" data-sdel="' + esc(c) + '" data-tip="remove this case" aria-label="remove the case ' + esc(c) + '">✕</button></span></div>').join('')
       + '<div class="wf-route"><span class="wf-route-k">DEFAULT<small>no match, no JSON, or no such field</small></span><span class="wf-chips">' + chipsFor('__def__') + '</span></div>';
-    const save = (next, okMsg) => {
+    const save = (next, okMsg, quiet) => {
       const res = H.station().configureJunction(p.id, { field: next.field, routes: next.routes, def: next.def });
       const note = $('#sw-note');
       if (!res || !res.ok) { H.sfx('bad'); if (note) note.textContent = '✕ not saved — ' + ((res && (res.msg || res.error)) || 'try again'); return false; }
+      /* a FIELD saved as it loses focus updates its words in place: a repaint here would swap out the input or key the
+         Commander just clicked into (the click on + ADD CASE, or the typing in the case box, would land on a node that is gone) */
+      if (quiet) { cur.field = next.field; body.querySelectorAll('[data-swf]').forEach(n => { n.textContent = next.field; }); if (note) note.textContent = okMsg; H.sfx('click'); return true; }
       H.sfx('click'); paint(true);
       const n2 = $('#sw-note'); if (n2) n2.textContent = okMsg || (next.def ? '✓ saved' : 'Saved. Now choose a DEFAULT belt so no job is left without a way out.');
       return true;
@@ -1816,11 +1822,11 @@ const WorkflowPanel = (() => {
       + '<div class="wf-route"><span class="wf-route-k">FIELD<small>e.g. tag, type, lead.kind, items[0].sku</small></span><span class="wf-chips">'
       + '<input id="sw-field" class="refit-input" type="text" maxlength="120" aria-label="Field to read" value="' + esc(cur.field) + '" /></span></div>'
       + '<div class="wf-routes">' + rows + '</div>'
-      + '<div class="wf-route"><span class="wf-route-k">ADD A CASE<small>a value of ' + esc(cur.field) + '</small></span><span class="wf-chips">'
+      + '<div class="wf-route"><span class="wf-route-k">ADD A CASE<small>a value of <span data-swf>' + esc(cur.field) + '</span></small></span><span class="wf-chips">'
       + '<input id="sw-new" class="refit-input" type="text" maxlength="40" aria-label="New case value" placeholder="e.g. hire" />'
       + '<button type="button" class="wf-chip" id="sw-add"' + (lanes.length ? '' : ' aria-disabled="true"') + '>+ ADD CASE</button></span></div>'
       + '<p class="wf-help" id="sw-note">' + (cur.def ? 'Saved as you choose.' : 'Choose a DEFAULT belt so no job is left without a way out.') + '</p>'
-      + '<p class="wf-help dim">To switch on an agent’s answer, tell the step before it to end its reply with a JSON block such as {"' + esc(cur.field) + '": "hire"}. A job already addressed to one agent follows that agent’s belt instead.</p></section>';
+      + '<p class="wf-help dim">To switch on an agent’s answer, tell the step before it to end its reply with a JSON block such as {"<span data-swf>' + esc(cur.field) + '</span>": "hire"}. A job already addressed to one agent follows that agent’s belt instead.</p></section>';
     wireEdits(body);
     body.querySelectorAll('[data-scase]').forEach(b => { b.onclick = () => {
       const c = b.dataset.scase, dir = b.dataset.sdir, next = { field: cur.field, routes: Object.assign({}, cur.routes), def: cur.def };
@@ -1839,7 +1845,7 @@ const WorkflowPanel = (() => {
         const v = fieldIn.value.trim();
         if (v === cur.field) return;
         if (!FIELD_RE.test(v)) { H.sfx('bad'); const note = $('#sw-note'); if (note) note.textContent = '✕ a field is a name like tag, a dotted path like lead.kind, or items[0].sku'; return; }
-        save({ field: v, routes: cur.routes, def: cur.def }, '✓ now reading ' + v);
+        save({ field: v, routes: cur.routes, def: cur.def }, '✓ now reading ' + v, true);
       };
       fieldIn.addEventListener('blur', commit);
       fieldIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') { e.stopPropagation(); fieldIn.blur(); } });
