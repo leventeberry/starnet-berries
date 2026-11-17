@@ -1,8 +1,8 @@
-// Live site audit: deterministic checks run instantly (no keys needed); Claude adds prioritized advice when
-// ANTHROPIC_API_KEY is set; the result is also handed to StarNet when an audit (or leads) hook is configured.
+// Live site audit: deterministic checks run instantly (no keys needed). The AI part runs in StarNet: when the
+// visitor asks for the full report, it goes to the audit (or leads) workflow, and LeVente approves the write-up.
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
-import { json, readJson, clean, isEmail, isBot, rateLimit, sendToStarNet, hasClaude, askClaude, handle, HttpError } from './_lib.js';
+import { json, readJson, clean, isEmail, isBot, rateLimit, sendToStarNet, handle, HttpError } from './_lib.js';
 
 const MAX_BYTES = 1_500_000;
 
@@ -127,26 +127,6 @@ export const POST = handle(async (request) => {
   if (!/html/i.test(page.headers.get('content-type') || 'text/html')) throw new HttpError(400, "That address isn't a web page.");
   const report = analyze(page);
 
-  // Claude's take: short, prioritized, plain-language fixes.
-  report.advice = null;
-  if (hasClaude()) {
-    try {
-      const failing = report.checks.filter((c) => !c.pass).map((c) => `- ${c.group}: ${c.label} (${c.detail})`).join('\n') || '- none';
-      const text = await askClaude({
-        system:
-          'You are a senior web consultant writing for a small-business owner. Be concrete and brief. ' +
-          'Return exactly 3 numbered recommendations, highest impact first, each one or two sentences. ' +
-          'After them, one line starting "AI idea:" naming one realistic way an AI agent could save this business time, ' +
-          'based on what the page is about. No preamble, no markdown headings.',
-        prompt:
-          `Site: ${report.url}\nTitle: ${report.title || '(none)'}\nScore: ${report.score}/100\nFailing checks:\n${failing}\n\n` +
-          `Visible text sample:\n${page.html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 2500)}`,
-        maxTokens: 900,
-      });
-      report.advice = text;
-    } catch (err) { console.error('audit advice failed', err.message); }
-  }
-
   // Hand the lead to StarNet if they asked for the full report.
   const email = clean(body.email, 254);
   report.followUp = null;
@@ -154,8 +134,8 @@ export const POST = handle(async (request) => {
     if (!isEmail(email)) throw new HttpError(400, 'That email address does not look right.');
     const r = await sendToStarNet('audit', {
       jobType: 'audit', email, name: clean(body.name, 120), url: report.url, score: report.score,
-      failing: report.checks.filter((c) => !c.pass), advice: report.advice,
-      instructions: 'A visitor ran the site audit and asked for the full report. Draft a detailed audit email for LeVente to review, with a short offer to fix the top issues.',
+      failing: report.checks.filter((c) => !c.pass),
+      instructions: 'A visitor ran the site audit and asked for the full report. Rank the top 3 fixes in plain English and draft a detailed audit email for LeVente to approve (do not send it), with a short offer to fix the top issues.',
     });
     report.followUp = r.queued ? 'queued' : 'unavailable';
   }

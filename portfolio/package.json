@@ -7,8 +7,7 @@
     "dev": "node dev-server.mjs",
     "check": "node --check dev-server.mjs && for f in api/*.js site/*.js; do node --check $f || exit 1; done"
   },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^1.9.0"
-  },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

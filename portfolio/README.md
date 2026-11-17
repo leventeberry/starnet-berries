@@ -9,8 +9,8 @@ Static site in `site/`, Vercel functions in `api/`. No build step.
 | Feature | Endpoint | Works with no config | Gets better with |
 |---|---|---|---|
 | Contact form | `POST /api/lead` (`jobType: general`) | Shows "offline" (or opens email if `CONTACT_EMAIL` is set) | `STARNET_HOOK_LEADS_*` |
-| Site review (AI lab) | `POST /api/audit` | Yes: 15 instant checks (speed, SEO, mobile, a11y, security headers) | `ANTHROPIC_API_KEY` adds 3 prioritized fixes; "Email me the report" goes to `STARNET_HOOK_AUDIT_*` |
-| "Hiring?" tab (job post → fit letter) | `POST /api/cover-letter` | Sends the post to StarNet if a hook is set | `ANTHROPIC_API_KEY` writes the letter on the spot |
+| Site review (AI lab) | `POST /api/audit` | Yes: 15 instant checks (speed, SEO, mobile, a11y, security headers) | "Email me the report" goes to StarNet (`STARNET_HOOK_AUDIT_*`, else LEADS); the agent ranks fixes, you approve, it's emailed |
+| "Hiring?" tab (job post → fit letter) | `POST /api/cover-letter` | No (needs a hook) | StarNet (`STARNET_HOOK_COVER_*`, else LEADS) writes the letter from `content.js` facts; you approve, it's emailed |
 | Agent status pill | `GET /api/status` | Yes | |
 
 Every StarNet call is `POST <hook url>` with `Authorization: Bearer <secret>` and an `Idempotency-Key`, so a
@@ -25,11 +25,10 @@ the visitor's fields, and an `instructions` line the workflow can use as its pro
 | `STARNET_HOOK_LEADS_SECRET` | that webhook's secret (shown once in StarNet) |
 | `STARNET_HOOK_AUDIT_URL` / `_SECRET` | optional; a separate workflow for audit follow-ups (falls back to LEADS) |
 | `STARNET_HOOK_COVER_URL` / `_SECRET` | optional; a separate workflow for job posts (falls back to LEADS) |
-| `ANTHROPIC_API_KEY` | instant audit advice and fit letters |
-| `ANTHROPIC_MODEL` | optional, default `claude-opus-5-5` |
 | `CONTACT_EMAIL` | optional; mailto fallback when StarNet is unreachable (this address becomes public) |
 
-Secrets only live in Vercel. The browser never sees them.
+Secrets only live in Vercel. The browser never sees them. The site holds no AI key: every AI step runs in a
+StarNet workflow, and nothing reaches a visitor until you approve it.
 
 ## Run it locally
 
@@ -49,7 +48,7 @@ gives functions 60 s. Then add `leventeberry.me` under Project → Domains and p
 
 ## Editing
 
-All copy (bio, how I started, what I love to build, the featured projects and how AI helped each) is in `site/content.js`. Lines marked `DRAFT` are guesses to rewrite. The fit-letter agent only uses facts
+All copy (bio, how I started, what I love to build, the featured projects and how AI helped each) is in `site/content.js`. Lines marked `DRAFT` are guesses to rewrite. The fit-letter agent only gets facts
 from that file, so keep it accurate. `site/styles.css` holds the colors at the top.
 
 Photos: put your portrait and real project screenshots in `site/img/` and set `profile.photo` and each project's
