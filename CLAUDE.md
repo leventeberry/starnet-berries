@@ -36,6 +36,11 @@ browser-mode constraints). Upstream's own docs are in `docs/`.
   `PUBLIC_BASE`; `notifyTriggerFinished` pings chats when a webhook job settles), the `onFinished` dep in
   `sidecar/routing/trigger-runner.js`, and the hosted help text in `frontend/app/workflowpanel.js`. See
   `deploy/README.md` § Public webhooks.
+- SWITCH machine (a FILTER whose cases are values of a JSON field, default `tag`): `switch`-marked entries next to
+  every `filter` one in `frontend/app/{pipeline,worldmodel,build,lineedit,linelayout,stationbuilder,stationcommands,conveyor}.js`,
+  `F.switch` + its catalog row in `propsprites.js`, `paintSwitch` in `workflowpanel.js`, `text:` on the routing ctx in
+  `sidecar/routing/chain.js` and `steptest.js`, and `test/switch.test.js`. It compiles to a filter junction with `field` set,
+  so FILTER plans and hashes are unchanged. After editing `frontend/`, run `node scripts/sync-website-app.mjs`.
 
 ## Browser-mode notes
 - The sidecar only serves loopback `Host`s and only gives its API token to a same-uid

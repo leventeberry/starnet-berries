@@ -21,7 +21,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const JUNCTION = { splitter: 1, filter: 1, merger: 1, joiner: 1, loop: 1 };
+  const JUNCTION = { splitter: 1, filter: 1, switch: 1, merger: 1, joiner: 1, loop: 1 };
   const fail = (error, msg) => ({ ok: false, error, msg });
   const clone = o => JSON.parse(JSON.stringify(o));
   function layoutModule() {

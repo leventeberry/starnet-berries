@@ -79,7 +79,53 @@
      `ring: true` link (the ring rule's accidental hookups, made explicit) — so a floor compiled through its derived links
      is the very same plan, hash and all (test/conveyor-links.test.js holds the whole routing corpus to it). */
   const BOX_MACHINE = { intake: 1, bay: 1, outbox: 1 };
-  const JUNCTION_MACHINE = { splitter: 1, filter: 1, merger: 1, joiner: 1, loop: 1 };
+  const JUNCTION_MACHINE = { splitter: 1, filter: 1, switch: 1, merger: 1, joiner: 1, loop: 1 };
+  /* SWITCH (starnet-berries): a FILTER whose cases are values of a FIELD in the JSON the job carries (a webhook's body, the
+     JSON a previous agent returned) instead of the code / research / general classifier. It compiles to a filter junction
+     with `field` set, so every walker, the engine and the panels route it the same way; a job whose field matches no case
+     (or carries no JSON) takes the DEFAULT lane, exactly like a filter's EVERYTHING ELSE. Pure + deterministic. */
+  const SWITCH_FIELD_RE = /^[A-Za-z0-9_$-]{1,40}(?:\[\d{1,4}\]|\.[A-Za-z0-9_$-]{1,40}){0,7}$/;
+  const SWITCH_FIELD_DEFAULT = 'tag';
+  const ownKey = (o, k) => o != null && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k);
+  const jsonObject = t => { try { const v = JSON.parse(t); return (v && typeof v === 'object') ? v : null; } catch (_) { return null; } };
+  // the JSON a job carries: the whole text, else its LAST ``` block that parses, else the span from its first { to its last }
+  function switchJson(text) {
+    const s = String(text == null ? '' : text).trim();
+    if (!s || s.length > 1048576) return null;
+    let v = (s[0] === '{' || s[0] === '[') ? jsonObject(s) : null;
+    if (v) return v;
+    const fences = s.match(/```[A-Za-z]*\s*\n[\s\S]*?\n\s*```/g) || [];
+    for (let i = fences.length - 1; i >= 0; i--) {
+      v = jsonObject(fences[i].replace(/^```[A-Za-z]*\s*\n/, '').replace(/\n\s*```$/, ''));
+      if (v) return v;
+    }
+    const a = s.indexOf('{'), b = s.lastIndexOf('}');
+    return (a >= 0 && b > a) ? jsonObject(s.slice(a, b + 1)) : null;
+  }
+  // switchValue(text, field) -> the field's value as a lowercased trimmed string, or null (absent, an object, no JSON)
+  function switchValue(text, field) {
+    const f = String(field || SWITCH_FIELD_DEFAULT);
+    if (!SWITCH_FIELD_RE.test(f)) return null;
+    let v = switchJson(text);
+    for (const part of f.match(/[^.[\]]+/g) || []) {
+      const k = /^\d+$/.test(part) && Array.isArray(v) ? +part : part;
+      if (!ownKey(v, k)) return null;
+      v = v[k];
+    }
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') { const out = String(v).trim().toLowerCase(); return out || null; }
+    return null;
+  }
+  // the lane a filter junction routes this job to by its routes (null = none: the caller falls to def, then the first lane).
+  // A FILTER reads the classifier tag; a SWITCH (cfg.field) the field's value, its cases matched ignoring case.
+  function filterWant(j, ctx) {
+    const r = (j && j.routes && typeof j.routes === 'object') ? j.routes : null;
+    if (!r) return null;
+    if (!j.field) { const tag = (ctx && ctx.tag) || 'general'; return ownKey(r, tag) ? r[tag] : null; }
+    const v = switchValue(ctx && ctx.text, j.field);
+    if (v == null) return null;
+    for (const c in r) if (String(c).trim().toLowerCase() === v) return r[c];
+    return null;
+  }
   // every belt tile on a machine's footprint + its 1-tile ring, in scan order (beltTileNear's first hit is [0])
   function ringBelts(map, p) {
     const out = [], w = p.w || 1, h = p.h || 1;
@@ -135,7 +181,7 @@
     // what a junction's lane `d` carries: a FILTER's routed tags / EVERYTHING ELSE, a LOOP's configured exit
     const outPort = (jp, d) => {
       const f = { prop: jp.id, port: 'out' };
-      if (jp.t === 'filter') {
+      if (jp.t === 'filter' || jp.t === 'switch') {
         const r = (jp.routes && typeof jp.routes === 'object') ? jp.routes : {}, tags = [];
         for (const tag in r) if (r[tag] === d) tags.push(tag);
         if (tags.length) f.tags = tags;
@@ -304,7 +350,7 @@
     for (const k in map) if (loose(k)) { const n = succ(k); if (n && loose(n)) hasLoosePred[n] = true; }
     const outPort = (jp, d) => {
       const f = { prop: jp.id, port: 'out' };
-      if (jp.t === 'filter') {
+      if (jp.t === 'filter' || jp.t === 'switch') {
         const r = (jp.routes && typeof jp.routes === 'object') ? jp.routes : {}, tags = [];
         for (const tag in r) if (r[tag] === d) tags.push(tag);
         if (tags.length) f.tags = tags;
@@ -639,7 +685,7 @@
         // the reaching lane started on a later-scanned ring tile. `tile` stays = first hit (back compat:
         // persisted plans and older callers read it); every walker fans out from `tiles`.
         sources.push({ propId: p.id, tile: t, tiles: hooked });
-      } else if (p.t === 'splitter' || p.t === 'filter' || p.t === 'merger' || p.t === 'joiner' || p.t === 'loop') {
+      } else if (p.t === 'splitter' || p.t === 'filter' || p.t === 'switch' || p.t === 'merger' || p.t === 'joiner' || p.t === 'loop') {
         const t = map[key(p.x, p.y)] ? { x: p.x, y: p.y } : beltTileNear(map, p.x, p.y, p.w || 1, p.h || 1);
         // a junction touching NO belt routes nothing — it silently compiled to nothing, which after a MOVE
         // one tile too far read as "my filter stopped working" with zero feedback. Warn (not a blocker: an
@@ -696,6 +742,8 @@
         if (kind === 'filter') {
           cfg.routes = (p.routes && typeof p.routes === 'object') ? p.routes : {};   // {tag -> out-lane dir}
           cfg.def = p.def || null;                                                    // default out-lane dir
+          // a SWITCH (starnet-berries): its cases are values of this field, not classifier tags (absent on every FILTER, so its plan + hash are unchanged)
+          if (p.t === 'switch') cfg.field = (typeof p.field === 'string' && SWITCH_FIELD_RE.test(p.field)) ? p.field : SWITCH_FIELD_DEFAULT;
           // a linked floor: each out-link's tags route down it and its EVERYTHING ELSE is the default (first claim wins);
           // a tag no link names keeps the prop's compass route
           if (outs.some(o => (Array.isArray(o.tags) && o.tags.length) || o.else)) {
@@ -753,7 +801,7 @@
        sit on/next to the line, and flat decor (block:false) buries nothing. geo already carries `block`
        per prop (worldmodel.projectGeometry emits it) — no contract change; a geo without the field
        (older callers/tests) simply never trips this. Anchored on the first covered belt tile. */
-    const BELT_MACHINES = { intake: 1, bay: 1, outbox: 1, filter: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
+    const BELT_MACHINES = { intake: 1, bay: 1, outbox: 1, filter: 1, switch: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
     for (const p of props) {
       if (p.block !== true || BELT_MACHINES[p.t]) continue;
       const pw = p.w || 1, ph = p.h || 1;
@@ -1518,7 +1566,7 @@
       const j = junctions[k];
       let d = here;
       if (j && j.kind === 'filter') {
-        const lanes = outLanes(map, t.x, t.y), want = j.routes && j.routes[tag];
+        const lanes = outLanes(map, t.x, t.y), want = filterWant(j, ctx);
         d = (want && lanes.indexOf(want) >= 0) ? want : (j.def && lanes.indexOf(j.def) >= 0) ? j.def : (lanes[0] || here);
       } else if (j && j.kind === 'split') {
         const lanes = splitLanes(map, junctions, dockAt, t.x, t.y);
@@ -1631,7 +1679,7 @@
           }
           return j.divide ? { branches, split: k, divide: true } : { branches, split: k };
         } else if (j && j.kind === 'filter') {
-          const lanes = outLanes(map, t.x, t.y), want = j.routes && j.routes[tag];
+          const lanes = outLanes(map, t.x, t.y), want = filterWant(j, ctx);
           d = (want && lanes.indexOf(want) >= 0) ? want : (j.def && lanes.indexOf(j.def) >= 0) ? j.def : (lanes[0] || here);
         } else if (j && j.kind === 'split') {
           const lanes = splitLanes(map, junctions, dockAt, t.x, t.y);
@@ -1898,7 +1946,7 @@
           // mirror conveyor.chooseExit EXACTLY: routed lane -> default lane -> first lane (never an invalid dir),
           // so the agent the sidecar resolves is provably the bay the box physically rides to.
           const lanes = outLanes(map, t.x, t.y);
-          const want = j.routes && j.routes[tag];
+          const want = filterWant(j, ctx);
           d = (want && lanes.indexOf(want) >= 0) ? want
             : (j.def && lanes.indexOf(j.def) >= 0) ? j.def
             : (lanes[0] || here);
@@ -2169,7 +2217,7 @@
   function lineComponents(geo) {
     const props = (geo && geo.props) || [];
     const map = Array.isArray(geo && geo.links) ? linkedBeltMap(buildBeltMap(geo && geo.belts), props, geo.links) : buildBeltMap(geo && geo.belts);
-    const MACH = { intake: 1, bay: 1, outbox: 1, filter: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
+    const MACH = { intake: 1, bay: 1, outbox: 1, filter: 1, switch: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
     // union-find over belt-tile keys
     const parent = {};
     const find = k => { let r = k; while (parent[r] !== r) r = parent[r]; let c = k; while (parent[c] !== r) { const n = parent[c]; parent[c] = r; c = n; } return r; };
@@ -2474,7 +2522,7 @@
     return { fromName: m[1] || '', original: orig ? orig[1] : '', output: out ? out[1] : '' };
   }
 
-  return { stepTestRefusal, lineStages, fedLineIds, lineSenders, rejoinOf, deriveLinks, reconcileLinks, compileRoutingPlan, sendToOf, sendsReachedOf, outboxesReached, lineWord, lineLetterOf, lineNames, uniqueLineName, handoffInput, parseHandoffInput, composeStageBrief, HANDS_LEAD, resolveTarget, lineOf, lineOriginOf, lineLimitsOf, normalizeLineLimits, LINE_LIMIT_DEFAULTS, LINE_LIMIT_CEILINGS, stageCeiling, overStageCeiling, hopsToFit, sourceFor, ok, liveTiles, routeFrom, junctionLaneOwners, chainNext, chainStep, fanSiblings, handoffPrompt, parseHandoff, isHandoff, stripVerdictLine, joinPayload, divideJob, partTurn, partHandoff, divideBrief, divideAfterDock, splitFedByDock, lineComponents, LOOP_MAX_DEFAULT, LOOP_MAX_CEILING,
+  return { switchValue, filterWant, SWITCH_FIELD_RE, SWITCH_FIELD_DEFAULT, stepTestRefusal, lineStages, fedLineIds, lineSenders, rejoinOf, deriveLinks, reconcileLinks, compileRoutingPlan, sendToOf, sendsReachedOf, outboxesReached, lineWord, lineLetterOf, lineNames, uniqueLineName, handoffInput, parseHandoffInput, composeStageBrief, HANDS_LEAD, resolveTarget, lineOf, lineOriginOf, lineLimitsOf, normalizeLineLimits, LINE_LIMIT_DEFAULTS, LINE_LIMIT_CEILINGS, stageCeiling, overStageCeiling, hopsToFit, sourceFor, ok, liveTiles, routeFrom, junctionLaneOwners, chainNext, chainStep, fanSiblings, handoffPrompt, parseHandoff, isHandoff, stripVerdictLine, joinPayload, divideJob, partTurn, partHandoff, divideBrief, divideAfterDock, splitFedByDock, lineComponents, LOOP_MAX_DEFAULT, LOOP_MAX_CEILING,
     // THE DOCK LAYER (multi-bay agents, 2026-09-22) — the dock-keyed truth the agent readings above are views of
     resolveDock, chainNextDock, chainStepDock, fanSiblingsDock, junctionLaneDocks, lineOfDock, lineOriginOfDock, entryDockOf, docksOf, dockOf, agentOfDock: agentOfDockIn, deriveDockLayer, dockLayer, hasDockLayer, stepToAgents, propIdCmp,
     _internals: { DIRV, OPP, LANE_ORDER, key, buildBeltMap, outLanes, inLanes, loopLanes, beltTileNear, ringBelts, junctionAnchor, dirBetween, linkTilesByProp, linkedBeltMap, nextTiles, splitLanes, detectCycle, hashStr, compileChains, compileDockChains, chainCycle, shipFrom, propIdCmp, entryDocksOf, agentChainsView } };

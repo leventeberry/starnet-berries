@@ -51,7 +51,7 @@
   const DIRV = { E: [1, 0], S: [0, 1], W: [-1, 0], N: [0, -1] };
   const ORDER = ['E', 'S', 'W', 'N'];
   const BOX = { intake: 1, bay: 1, outbox: 1 };
-  const JUNCTION = { splitter: 1, filter: 1, merger: 1, joiner: 1, loop: 1 };
+  const JUNCTION = { splitter: 1, filter: 1, switch: 1, merger: 1, joiner: 1, loop: 1 };
   const GAP_X = 2;          // clear tiles between neighbouring columns (the straight belt between them)
   const PITCHES = [2, 3, 4];  // rows from one lane's belt row to the next — tightest first (2: branches stacked edge to edge,
                               // the way the hand-drawn lines pack them); a looser one only when the tight one cannot route
@@ -246,7 +246,7 @@
   function orderKept(a, at, paths) {
     for (const id of a.order) {
       const t = a.nodes[id].t;
-      if (t !== 'splitter' && t !== 'filter') continue;
+      if (t !== 'splitter' && t !== 'filter' && t !== 'switch') continue;
       const kids = kidsOf(a, id);
       if (kids.length < 2) continue;
       const read = a.out[id].filter(a.fwd).map(l => ({ b: l.b, r: ORDER.indexOf(dirTo(at[id], paths[l.id][0])) }))
@@ -276,7 +276,7 @@
       const fixedSide = (l, out) => !kept.has(l) ? null : out ? dirTo(p, l.path[0]) : dirTo(p, l.path[l.path.length - 1]);
       const ends = a.out[id].map(l => ({ l, out: true, want: sideOf(a, l, id, l.b, true), fixed: fixedSide(l, true) }))
         .concat(a.inn[id].map(l => ({ l, out: false, want: sideOf(a, l, id, l.a, false), fixed: fixedSide(l, false) })));
-      const kids = (n.t === 'splitter' || n.t === 'filter') ? kidsOf(a, id) : [];
+      const kids = (n.t === 'splitter' || n.t === 'filter' || n.t === 'switch') ? kidsOf(a, id) : [];
       const readsRight = pick => {
         if (kids.length < 2) return true;
         const read = ends.map((e, i) => ({ e, r: ORDER.indexOf(pick[i]) })).filter(o => o.e.out && a.fwd(o.e.l))

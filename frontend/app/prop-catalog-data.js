@@ -2,8 +2,8 @@
 'use strict';
 const PropCatalogData = {
   "version": 1,
-  "catalogTypes": 161,
-  "supportedViews": 209,
+  "catalogTypes": 162,
+  "supportedViews": 210,
   "source": "frontend/assets/industrial/projection-correction/manifest.json",
   "sourceSha256": "33b4b3030043946fc04d26a5334ab239e14d2a90c489fbaf023e516ab65a6774",
   "categories": [
@@ -50,6 +50,10 @@ const PropCatalogData = {
     {
       "id": "decor",
       "label": "DECOR"
+    },
+    {
+      "id": "yours",
+      "label": "MADE BY YOU"
     }
   ],
   "views": [
@@ -1074,6 +1078,35 @@ const PropCatalogData = {
       "face": "s",
       "r": 0,
       "label": "FILTER",
+      "category": "workflow",
+      "tier": "functional",
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "bounds": {
+        "x": -1,
+        "y": -8,
+        "width": 14,
+        "height": 19
+      },
+      "placement": "floor",
+      "requiredMount": null,
+      "optionalStack": false,
+      "flat": false,
+      "artFace": "s",
+      "nativeMirror": false,
+      "nativeTurn": false,
+      "image": "filter.png",
+      "surface": false,
+      "animated": true
+    },
+    {
+      "key": "switch:s",
+      "id": "switch",
+      "face": "s",
+      "r": 0,
+      "label": "SWITCH",
       "category": "workflow",
       "tier": "functional",
       "footprint": {

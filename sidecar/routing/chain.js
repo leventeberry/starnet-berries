@@ -1180,7 +1180,7 @@ function makeChainRunner(o) {
         let decided = null;
         const saidAtGate = out.text;
         if (resumeDecision) { decided = resumeDecision; resumeDecision = null; producerVerdict = decided.action === 'approve' ? Verdict.VERDICT_WORDS[0] : Verdict.VERDICT_WORDS[1]; }
-        const ctx = { tag: getTag(out.text), verdict: producerVerdict, lineId: lineId, fromTile: fromTile, via: via, reach };
+        const ctx = { tag: getTag(out.text), text: out.text, verdict: producerVerdict, lineId: lineId, fromTile: fromTile, via: via, reach };
         const briefHeld = heldStop(loopGateAfter, cur.agentId, lineId, cur.dockId, ctx.verdict);
         if (briefHeld) return holdAt(briefHeld, cur, 'blocked', briefHeld.gateId, iter[briefHeld.gateId] || 0, { hop, ctx, gate: briefHeld.gate });
         fromTile = null; via = null;

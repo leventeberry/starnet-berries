@@ -253,7 +253,10 @@ const Conveyor = (() => {
       }
       if (jt.kind === 'filter') {
         const tag = (bx.payload && bx.payload.tag) || 'general';
-        const want = jt.routes && jt.routes[tag];
+        // a SWITCH (jt.field, starnet-berries) reads its field from the JSON the crate carries — the same reader dispatch uses
+        const want = (jt.field && typeof Pipeline !== 'undefined' && Pipeline.filterWant)
+          ? Pipeline.filterWant(jt, { tag, text: bx.payload && (bx.payload.text || bx.payload.preview) })
+          : jt.routes && jt.routes[tag];
         const dir = (want && lanes.indexOf(want) >= 0) ? want
                   : (jt.def && lanes.indexOf(jt.def) >= 0) ? jt.def
                   : lanes[0];                              // safety: an unroutable tag takes the first lane, never dropped

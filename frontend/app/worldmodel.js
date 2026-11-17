@@ -104,7 +104,7 @@ const WorldModel = (() => {
   function cleanRoutes(r) {
     if (!r || typeof r !== 'object') return null;
     const out = {}; let n = 0;
-    for (const k in r) { const key = String(k).slice(0, 24); if (key && JDIRS[r[k]]) { out[key] = r[k]; n++; } }
+    for (const k in r) { const key = String(k).slice(0, 40); if (key && JDIRS[r[k]]) { out[key] = r[k]; n++; } }   // (40: a SWITCH's case values, starnet-berries; a FILTER's tags are short)
     return n ? out : null;
   }
   const cleanBuf = b => { const n = b | 0; return n >= 2 ? n : null; };
@@ -140,6 +140,8 @@ const WorldModel = (() => {
   function applyJunctionCfg(dst, src) {
     const routes = cleanRoutes(src.routes); if (routes) dst.routes = routes;
     const def = cleanDir(src.def); if (def) dst.def = def;
+    // a SWITCH's field (starnet-berries): the JSON path its cases are values of — the same grammar the compiler accepts
+    if (typeof src.field === 'string' && /^[A-Za-z0-9_$-]{1,40}(?:\[\d{1,4}\]|\.[A-Za-z0-9_$-]{1,40}){0,7}$/.test(src.field)) dst.field = src.field;
     const buf = cleanBuf(src.bufferSize); if (buf) dst.bufferSize = buf;
     // JOINER / LOOP gate config (2026-08-21): bounded ints + a lane dir + a tag, same sanitizing discipline
     const tm = Math.floor(+src.timeoutMin); if (isFinite(tm) && tm >= 1 && tm <= 120) dst.timeoutMin = tm;
@@ -1054,7 +1056,7 @@ const WorldModel = (() => {
        line; null = not adopted (no compiler loaded, or a floor they would not reproduce) and the compiler keeps the ring
        rule, exactly as before links existed. The derivation reads the junction config projectGeometry hands the
        compiler (routes / def / done — not esc, which the projection does not carry), so the two can never disagree. */
-    const LINK_MACHINES = { intake: 1, bay: 1, outbox: 1, splitter: 1, filter: 1, merger: 1, joiner: 1, loop: 1 };
+    const LINK_MACHINES = { intake: 1, bay: 1, outbox: 1, splitter: 1, filter: 1, switch: 1, merger: 1, joiner: 1, loop: 1 };
     const linkCache = { sig: null, links: undefined };
     function currentLinks() {
       const P = pipelineModule();
@@ -2020,7 +2022,7 @@ const WorldModel = (() => {
        compass) and the panel reading the same routes the compiler does. */
     function syncJunctionCfg(J) {
       const lanes = junctionOutLanes(J);
-      if (J.t === 'filter') {
+      if (J.t === 'filter' || J.t === 'switch') {
         const named = lanes.filter(o => (Array.isArray(o.link.from.tags) && o.link.from.tags.length) || o.link.from.else);
         if (!named.length) return;
         const routes = {};
@@ -2335,7 +2337,7 @@ const WorldModel = (() => {
       const P = pipelineModule();
       if (!P || typeof P.deriveLinks !== 'function') return fail('NO_COMPILER', 'the line compiler is not loaded');
       const ov = (opts && typeof opts === 'object') ? opts : {};
-      const CFG = ['routes', 'def', 'bufferSize', 'timeoutMin', 'maxIter', 'done', 'esc', 'when', 'divide', 'onSpent'];
+      const CFG = ['routes', 'def', 'field', 'bufferSize', 'timeoutMin', 'maxIter', 'done', 'esc', 'when', 'divide', 'onSpent'];
       const nodes = bp.props.map((sp, i) => {
         const n = { id: 'b' + i, t: sp.t, w: sp.w || 1, h: sp.h || 1 };
         if (sp.block === false) n.block = false;
@@ -2467,7 +2469,7 @@ const WorldModel = (() => {
        a free neighbor (the out-lane forms naturally). All-or-nothing, one undo slot. This is what makes
        the tile-perfect wiring rules (ring adjacency, junction-on-line, direction) unlearnable-by-necessity:
        the user clicks INBOX then BAY, and the path knows the rules for them. */
-    const CONNECTABLE = { intake: 1, bay: 1, outbox: 1, filter: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
+    const CONNECTABLE = { intake: 1, bay: 1, outbox: 1, filter: 1, switch: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
     /* 1x1 JUNCTIONS ARE ON-LINE MACHINES (2026-08-22 stranded-user fix). The compiler (pipeline.js) reads a
        splitter/joiner/loop/filter/merger by the belt UNDER its own tile: in-lanes are 4-neighbours flowing
        INTO that tile, out-lanes are 4-neighbours flowing away. The old connect path treated a junction like a
@@ -2478,7 +2480,7 @@ const WorldModel = (() => {
        the last tile aimed INTO it (an in-lane — a corner can never be one), or left from a free 4-neighbour
        (an out-lane). The would-be lane is checked against the compiler's own lane readers BEFORE a tile is
        written — a lane the compiler would not count is refused (honest failure, no chime), never laid. */
-    const JUNCTION = { filter: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
+    const JUNCTION = { filter: 1, switch: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
     const isJunction = p => !!JUNCTION[p.t] && (p.w || 1) === 1 && (p.h || 1) === 1;
     /* CONNECT ON A LINKED FLOOR (conveyor-links phase B, 2026-09-28): the lane is a LINK — from this machine, to that
        one, along this belt — so it hooks exactly its two machines and nothing it passes. Three rules replace the old
@@ -2870,7 +2872,7 @@ const WorldModel = (() => {
     // exit) — the same reading Pipeline.deriveLinks uses, so a drawn lane and a derived one mean the same thing
     function junctionPort(J, d) {
       const f = { prop: J.id, port: 'out' };
-      if (J.t === 'filter') {
+      if (J.t === 'filter' || J.t === 'switch') {
         const r = (J.routes && typeof J.routes === 'object') ? J.routes : {}, tags = [];
         for (const tag in r) if (r[tag] === d) tags.push(tag);
         if (tags.length) f.tags = tags;
@@ -3294,7 +3296,7 @@ const WorldModel = (() => {
        link's id), and a FILTER's EVERYTHING ELSE lane / a LOOP's DONE lane is the lane the belt already runs on, so the
        line keeps flowing exactly as before (a filter with no default lane is a finding). `o.cfg` = settings carried in
        hand (a pipette / a copy): passes, verdict, wait — never a compass lane from somewhere else. One undo. */
-    const HAND_CFG = ['maxIter', 'when', 'timeoutMin', 'bufferSize', 'divide', 'onSpent'];   // (+divide: a SPLIT THE JOB splitter picked up keeps dividing — applyJunctionCfg writes it only when literally true)
+    const HAND_CFG = ['field', 'maxIter', 'when', 'timeoutMin', 'bufferSize', 'divide', 'onSpent'];   // (+divide: a SPLIT THE JOB splitter picked up keeps dividing — applyJunctionCfg writes it only when literally true)
     function junctionOnBelt(x, y, t, o) {
       if (!JUNCTION[t]) return fail('NOT_JUNCTION', 'only a 1×1 junction goes on a belt');
       const no = junctionOnBeltRefusal(x, y);
@@ -3303,7 +3305,7 @@ const WorldModel = (() => {
       const placement = { t, x: x | 0, y: y | 0, w: 1, h: 1, block: !!(o && o.block === true) };   // a junction is walked over (catalog blocks:false)
       const cfg = (o && o.cfg) || {};
       for (const k of HAND_CFG) if (cfg[k] != null) placement[k] = cfg[k];
-      if (t === 'filter') placement.def = lane;
+      if (t === 'filter' || t === 'switch') placement.def = lane;
       if (t === 'loop') placement.done = lane;
       const c0 = linkAtTile(x, y).link, cut = { id: c0.id, from: { prop: c0.from.prop }, to: { prop: c0.to.prop } };   // (plain copies: the reconcile may re-aim the link object)
       const was = (currentLinks() || []).map(l => ({ id: l.id, from: l.from.prop, to: l.to.prop }));
@@ -4287,6 +4289,7 @@ const WorldModel = (() => {
         if (p.t === 'intake' && validLineId(p.lineId)) lp.lineId = p.lineId;
         if (p.limits) lp.limits = p.limits;   // an INTAKE's LINE BUDGET -> the compiled plan (pipeline normalizes; chain executor reads)
         if (p.routes) lp.routes = p.routes; if (p.def) lp.def = p.def; if (p.bufferSize) lp.bufferSize = p.bufferSize;   // junction config -> the bake/pipeline
+        if (p.field) lp.field = p.field;   // a SWITCH's field (starnet-berries)
         if (p.timeoutMin) lp.timeoutMin = p.timeoutMin; if (p.maxIter) lp.maxIter = p.maxIter; if (p.done) lp.done = p.done; if (p.when) lp.when = p.when; if (p.onSpent) lp.onSpent = p.onSpent;   // joiner / loop gate config (onSpent: the gate's policy when its passes run out)
         if (p.divide) lp.divide = true;   // a SPLITTER's SPLIT THE JOB mode -> the compiler (meaningful only with a JOINER downstream)
         if (p.door) lp.door = p.door;   // an AIRLOCK's seal state -> the prop sprite's status light / jam spark
@@ -4638,8 +4641,11 @@ const WorldModel = (() => {
       if (!p) return fail('NOT_FOUND', 'no such prop');
       const linkedNow = Array.isArray(currentLinks());
       snapshot();
-      delete p.routes; delete p.def; delete p.bufferSize; delete p.timeoutMin; delete p.maxIter; delete p.done; delete p.when; delete p.onSpent;   // replace wholesale (a save that wants the gate's policy names it: the panel and the station designer do)
+      // a SWITCH keeps its field through a save that does not name it (a caller that sets only routes); null clears all (starnet-berries)
+      const keepField = (cfg && !Object.prototype.hasOwnProperty.call(cfg, 'field')) ? p.field : undefined;
+      delete p.routes; delete p.def; delete p.bufferSize; delete p.timeoutMin; delete p.maxIter; delete p.done; delete p.when; delete p.onSpent; delete p.field;   // replace wholesale (a save that wants the gate's policy names it: the panel and the station designer do)
       if (cfg) applyJunctionCfg(p, cfg);
+      if (keepField && !p.field) p.field = keepField;
       // a linked floor: the junction's out-links carry what the new config routes down their lanes (links are what the
       // compiler reads — a route set in the panel must land on the link it names)
       if (linkedNow && isJunction(p)) {
@@ -4647,7 +4653,7 @@ const WorldModel = (() => {
         if (lanes.length) doc.links = doc.links.map(l => { const o = lanes.find(q => q.link === l); return o ? Object.assign({}, l, { from: junctionPort(p, o.dir) }) : l; });
       }
       emit([{ x1: p.x, y1: p.y, x2: p.x + (p.w || 1) - 1, y2: p.y + (p.h || 1) - 1 }], { staticBakeUnchanged: true });
-      return { ok: true, id: propId, routes: p.routes || null, def: p.def || null, bufferSize: p.bufferSize || null, timeoutMin: p.timeoutMin || null, maxIter: p.maxIter || null, done: p.done || null, when: p.when || null, onSpent: p.onSpent || null };
+      return { ok: true, id: propId, routes: p.routes || null, def: p.def || null, bufferSize: p.bufferSize || null, timeoutMin: p.timeoutMin || null, maxIter: p.maxIter || null, done: p.done || null, when: p.when || null, onSpent: p.onSpent || null, field: p.field || null };
     }
     // bind/clear the connectorId on a CONNECTOR PORTAL — WHICH MCP server this gateway grants (per-instance).
     // A blank id unbinds (the portal grants nothing until bound; bayObjects emits it only when bound). Mirrors

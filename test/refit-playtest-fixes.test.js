@@ -37,7 +37,7 @@ const tutorialSrc = read('tutorial.js');
   A.eq(hits[0], 'INBOX', '…and the workflow INBOX ranks first');
 
   const wf = cat.filter(c => c.cat === 'workflow').map(c => c.id).sort();
-  A.eq(wf, ['bay', 'filter', 'intake', 'joiner', 'loop', 'merger', 'outbox', 'splitter'], 'the catalog\'s workflow machines are the eight the shelf lists');
+  A.eq(wf, ['bay', 'filter', 'intake', 'joiner', 'loop', 'merger', 'outbox', 'splitter', 'switch'], 'the catalog\'s workflow machines are the nine the shelf lists (starnet-berries: + SWITCH)');
   // every machine on the shelf carries its one-line purpose (PALETTE_PURPOSE, parsed from build.js)
   const pp = build.slice(build.indexOf('const PALETTE_PURPOSE = {'), build.indexOf('};', build.indexOf('const PALETTE_PURPOSE = {')));
   for (const id of wf) A.ok(new RegExp('\\n\\s+' + id + ': \'').test(pp), id + ' has a one-line purpose on the shelf');

@@ -90,7 +90,7 @@ const Build = (() => {
   const SEEN_KEY = 'starnet.refit.seen';
   const PREVIEW_LABEL = '▶ TEST';   // 2026-09-28: ONE test control (the name kept: the guide and Field Manual quote it) — it opens the line's TEST view (WATCH IT free · STEP THROUGH · SEND A REAL JOB) and plays the free walkthrough   // the top-bar preview button — the guide and Field Manual name it by this constant
   // machines the BELT tool connects with two clicks (mirrors worldmodel CONNECTABLE)
-  const CONNECT_TYPES = { intake: 1, bay: 1, outbox: 1, filter: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
+  const CONNECT_TYPES = { intake: 1, bay: 1, outbox: 1, filter: 1, switch: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
 
   let opts = null, station = null, unsub = null;
   let connectFrom = null;   // connect-mode state: the armed FROM machine's propId (null = not connecting)
@@ -1634,6 +1634,7 @@ const Build = (() => {
     intake: 'where work comes in: a schedule, a chat message, a watched folder or another app calling in starts the line here',
     bay: 'one step: the agent you put here does this part of the job and passes the result on',
     filter: 'sorts by task type (code, research or everything else) and sends each type down its own belt',
+    switch: 'reads one field (like tag) from the JSON the job carries and sends each value you list down its own belt; no match takes the default',
     merger: 'lets several belts share one; nothing waits and nothing is combined, each job goes on alone',
     splitter: 'one belt into several. With a JOINER after the branches every branch gets a copy; without one, jobs take turns',
     joiner: 'waits until every branch has finished, then sends ONE combined result on',
@@ -1651,13 +1652,14 @@ const Build = (() => {
     joiner: '<path d="M2 5H12V12"/><path d="M2 19H12V12"/><rect class="md-fill" x="13" y="6" width="3" height="12"/><path d="M16 12H30"/><path class="md-fill" d="M30 9L34 12L30 15z"/>',
     merger: '<path d="M2 5H14V12"/><path d="M2 19H14V12"/><path d="M14 12H30"/><path class="md-fill" d="M30 9L34 12L30 15z"/>',
     filter: '<path d="M2 12H11"/><path d="M11 12V4H29"/><path class="md-fill" d="M29 1L33 4L29 7z"/><path d="M11 12H29"/><path class="md-fill" d="M29 9L33 12L29 15z"/><path d="M11 12V20H29"/><path class="md-fill" d="M29 17L33 20L29 23z"/>',
+    switch: '<path d="M2 12H11"/><path d="M11 12V4H29"/><path class="md-fill" d="M29 1L33 4L29 7z"/><path d="M11 12H29"/><path class="md-fill" d="M29 9L33 12L29 15z"/><path d="M11 12V20H29"/><path class="md-fill" d="M29 17L33 20L29 23z"/>',
     loop: '<path d="M2 18H30"/><path class="md-fill" d="M30 15L34 18L30 21z"/><path d="M25 18V6H10V12"/><path class="md-fill" d="M7 12L10 16L13 12z"/>'
   };
   const machineDiagramSVG = id => MACHINE_DIAGRAM[id] ? '<svg class="refit-machinediagram" viewBox="0 0 40 24" aria-hidden="true" focusable="false">' + MACHINE_DIAGRAM[id] + '</svg>' : '';
   // the shelf in the order work meets them, in three plain groups (a junction goes ON a belt)
   const MACHINE_GROUPS = [
     ['THE LINE', 'work comes in, agents do the steps, the result comes out', ['bay', 'intake', 'outbox']],
-    ['BRANCH & COMBINE', 'drop these ON a belt', ['splitter', 'merger', 'joiner', 'filter']],
+    ['BRANCH & COMBINE', 'drop these ON a belt', ['splitter', 'merger', 'joiner', 'filter', 'switch']],
     ['REPEAT', 'a reviewer can send work back', ['loop']]
   ];
   /* THE MACHINES SHELF (2026-09-23 playtest fix). The Conveyors tab offered whole LINES and the BELT tool,
@@ -1669,7 +1671,7 @@ const Build = (() => {
   const MACHINES_LABEL = 'MACHINES';   // the Conveyors tab's single-machine shelf — the guide + Field Manual name it by this
   const LINES_LABEL = 'LINES';         // …and its ready-made lines, the section key beside it
   let convSection = 'lines';           // the Conveyors section up now: 'lines' (BUILD YOUR OWN + the ready-made shelf) or 'machines'
-  const MACHINE_ORDER = ['bay', 'intake', 'outbox', 'splitter', 'merger', 'joiner', 'filter', 'loop'];   // (org P18) the HOTBAR's order (keys 1–8), so the shelf and the hand agree; JOINER still beside MERGER
+  const MACHINE_ORDER = ['bay', 'intake', 'outbox', 'splitter', 'merger', 'joiner', 'filter', 'loop'];   // (org P18) the HOTBAR's order (keys 1–8), so the shelf and the hand agree; JOINER still beside MERGER. (A SWITCH — starnet-berries — is on the shelf, not the hotbar: an unranked machine sorts last.)
   function workflowMachines() {
     const all = catalog().filter(c => c && c.cat === 'workflow');
     const rank = id => { const i = MACHINE_ORDER.indexOf(id); return i < 0 ? MACHINE_ORDER.length : i; };
@@ -2193,7 +2195,7 @@ const Build = (() => {
       }
     };
     for (const p of bp.props) {
-      if (p.t === 'filter') {
+      if (p.t === 'filter' || p.t === 'switch') {
         const dirs = [];
         for (const k of Object.keys(p.routes || {})) { paint(p.x, p.y, p.routes[k], SCHEME.cyan); dirs.push({ d: p.routes[k], col: SCHEME.cyan }); }
         if (p.def) { paint(p.x, p.y, p.def, SCHEME.neutral); dirs.push({ d: p.def, col: SCHEME.neutral }); }
@@ -2272,8 +2274,8 @@ const Build = (() => {
         x.fillStyle = SCHEME.greenHot; x.fillRect(X + W - m - u * 2, Y + m + 1, u * 2, u);
         x.fillStyle = SCHEME.green; x.fillRect(X + m + 1, Y + H - m - u - 1, u * 2, u);
       } else {                               // junction (filter/splitter/merger/joiner/loop) — node + tinted arms
-        const core = p.t === 'filter' ? SCHEME.violet : (p.t === 'splitter' ? SCHEME.green : p.t === 'loop' ? SCHEME.cyan : SCHEME.merge);
-        const hot = p.t === 'filter' ? SCHEME.violetHot : (p.t === 'splitter' ? '#c8f4e6' : p.t === 'loop' ? '#bfefff' : p.t === 'joiner' ? '#ffc9a0' : '#ffd488');
+        const core = (p.t === 'filter' || p.t === 'switch') ? SCHEME.violet : (p.t === 'splitter' ? SCHEME.green : p.t === 'loop' ? SCHEME.cyan : SCHEME.merge);
+        const hot = (p.t === 'filter' || p.t === 'switch') ? SCHEME.violetHot : (p.t === 'splitter' ? '#c8f4e6' : p.t === 'loop' ? '#bfefff' : p.t === 'joiner' ? '#ffc9a0' : '#ffd488');
         lineBody(x, X + 1, Y + 1, W - 2, H - 2, st.top, st.face, st.lit, st.dk);
         const cx = X + (W >> 1), cy = Y + (H >> 1);
         const fan = lanes.fans.find(f => f.p === p);
@@ -2699,7 +2701,7 @@ const Build = (() => {
       /* a 1×1 JUNCTION goes ON a belt (2026-09-27 audit P5): the compiler reads a splitter/joiner/filter/merger/loop by the
          belt under its own tile, and dropping one onto an existing lane is how every ready-made line is built — the old
          'clear deck tile' copy steered people to empty floor and three hand-wired belts. */
-      const JUNC = { splitter: 1, joiner: 1, filter: 1, merger: 1, loop: 1 };
+      const JUNC = { splitter: 1, joiner: 1, filter: 1, switch: 1, merger: 1, loop: 1 };
       if (WORKSTATION_TYPES[propType]) verb = (spec ? spec.label + ' · ' : '') + 'click a clear deck tile to place ' + (deskOwner ? agentLabel(deskOwner) + '’s desk' : 'it, then pick who sits there');
       else verb = (spec ? spec.label + ' · ' : '') + (JUNC[propType] ? 'drop it ON a belt to put it on that line, or on clear floor' : 'click a clear deck tile to place' + (rowable(propType) ? ' · drag for a row' : ''));
       const bits = [];
@@ -4238,7 +4240,7 @@ const Build = (() => {
   function onBuildAdvance(bx, info) {
     if (!bx.payload || !bx.payload.test || !info || !info.tile) return;
     const { x, y } = info.tile, cfg = junctionCfgAt(x, y) || {};
-    if (info.kind === 'filter') note(x, y, 'SORTED: ' + String(info.tag || 'general').toUpperCase() + ' → THIS BELT', '#5ad0ff');
+    if (info.kind === 'filter') note(x, y, (cfg.field ? 'SWITCHED' : 'SORTED: ' + String(info.tag || 'general').toUpperCase()) + ' → THIS BELT', '#5ad0ff');
     else if (info.kind === 'split') {
       if ((info.fanout || cfg.fanout) && typeof Pipeline !== 'undefined' && Pipeline._internals && station) {
         const map = {};
@@ -4969,6 +4971,7 @@ const Build = (() => {
        the card landed on the JOINER and OUTBOX a first-time user had placed and was about to belt. The card is advice; the
        machines are the work. The first spot that covers no workflow machine wins; the old order is the fallback. */
     const FIN_AVOID = { intake: 1, bay: 1, outbox: 1, filter: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
+    FIN_AVOID.switch = 1;   // starnet-berries: the SWITCH is a workflow machine too
     const boxes = station.props().filter(p => FIN_AVOID[p.t]).map(p => ({ l: sx(p.x * t), t: sy(p.y * t), r: sx((p.x + (p.w || 1)) * t), b: sy((p.y + (p.h || 1)) * t) }));
     const spots = cands.map(q => ({ x: clampX(q.x), y: clampY(q.y) }));
     const clear = q => !boxes.some(m => q.x < m.r && q.x + w > m.l && q.y < m.b && q.y + h > m.t);
@@ -6458,6 +6461,7 @@ const Build = (() => {
     if (t === 'connector_portal') return openConnectorEditor(p.id, ev);
     if (t === 'plugin_terminal') return openPluginBinder(p.id, ev);
     if (t === 'intake' || t === 'outbox' || t === 'merger' || t === 'splitter' || t === 'joiner' || t === 'loop') return openFlowCard(p.id);
+    if (t === 'switch') return openFlowCard(p.id);   // starnet-berries: cases are edited in the Workflow panel
     // no config surface: answer the click honestly instead of doing nothing
     const sp = propSpec(t);
     renderEquipmentInfo(t, p);
@@ -6466,14 +6470,14 @@ const Build = (() => {
   /* the belt tile a junction dropped NEXT to a belt snaps onto (orthogonal neighbours first, then diagonals) — or null. ONE rule for the
      click (commitPropStamp) and its hover ghost (repair 2026-10-11): the ghost used to judge the hover tile as bare floor and say
      green CLICK TO PLACE while the click snapped onto a belt the model then refused, or landed the piece on another tile */
-  const SNAP_JUNCTIONS = { filter: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
+  const SNAP_JUNCTIONS = { filter: 1, switch: 1, splitter: 1, merger: 1, joiner: 1, loop: 1 };
   function junctionSnap(t, px, py) {
     if (!SNAP_JUNCTIONS[t] || station.beltAt(px, py)) return null;
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) if (station.beltAt(px + dx, py + dy)) return { x: px + dx, y: py + dy };
     return null;
   }
   const openPropEditor = (id, t, ev) => { const p = station && station.propById(id); if (p) configureProp(p, ev); };
-  const PROP_EDITABLE = { bay: 1, filter: 1, merger: 1, splitter: 1, joiner: 1, loop: 1, airlock: 1, connector_portal: 1, plugin_terminal: 1, intake: 1, outbox: 1 };   // merger/splitter = flow card only (no config)
+  const PROP_EDITABLE = { bay: 1, filter: 1, switch: 1, merger: 1, splitter: 1, joiner: 1, loop: 1, airlock: 1, connector_portal: 1, plugin_terminal: 1, intake: 1, outbox: 1 };   // merger/splitter = flow card only (no config)
   const isEditableProp = t => !!PROP_EDITABLE[t] || !!WORKSTATION_TYPES[t];   // a workstation binds an agent + opens its picker on place/click
   function beltUnderFoot(t, x, y, size) {
     if (!CONNECT_TYPES[t] || JUNCTION_TAG_TYPES[t] || !linkedFloor()) return null;
@@ -6575,7 +6579,7 @@ const Build = (() => {
       selectedPropId = res.id; renderSelection();   // the tool stays armed; the new desk's card asks who sits there
       return feedback(res, ev, owner ? (agentLabel(owner) + '’s desk · they sit here now') : 'desk placed · pick who sits here');
     }
-    if (onBelt) return feedback(res, ev, propLabel(propType) + ' PUT ON THE LINE' + (propType === 'filter' ? ' · EVERYTHING ELSE KEEPS THIS LANE' : propType === 'loop' ? ' · DONE KEEPS THIS LANE — BELT ITS BACK LANE TO AN EARLIER BAY' : ''));
+    if (onBelt) return feedback(res, ev, propLabel(propType) + ' PUT ON THE LINE' + ((propType === 'filter' || propType === 'switch') ? ' · ' + (propType === 'switch' ? 'DEFAULT' : 'EVERYTHING ELSE') + ' KEEPS THIS LANE' : propType === 'loop' ? ' · DONE KEEPS THIS LANE — BELT ITS BACK LANE TO AN EARLIER BAY' : ''));
     feedback(res, ev, grant ? ('PLACED · ' + grant + ' equipment') : ('placed ' + ((typeof PropSprites !== 'undefined' && PropSprites.isUserProp && PropSprites.isUserProp(propType)) ? String((PropSprites.spec(propType) || {}).label || 'made prop').toLowerCase() : propType)));   // a made prop's id is internal; say its name
   }
   /* DRAG TO LAY A ROW (2026-10-01 build-mode upgrade). With a piece of furniture armed, a drag lays copies from where you pressed
@@ -6954,7 +6958,7 @@ const Build = (() => {
   /* PICK WHAT GOES HERE (empty-floor release). The pieces that fit are asked ONCE, now, of a probe copy (station.probeDrop — the
      real edit, thrown away); the bottom dock lists only those (windows dock from the bottom — never a popover at the pointer), a
      pin marks the tile, the ghost belt stays drawn; a pick lays it all as one undo, Esc / right-click / a press elsewhere cancels. */
-  const DROP_TYPES = ['bay', 'outbox', 'splitter', 'merger', 'joiner', 'filter', 'loop'];   // an INBOX starts a line: nothing belts into it
+  const DROP_TYPES = ['bay', 'outbox', 'splitter', 'merger', 'joiner', 'filter', 'switch', 'loop'];   // an INBOX starts a line: nothing belts into it
   function dropSpec(t) { const s = propSpec(t); return { t, w: s.w || 1, h: s.h || 1, block: s.blocks !== false }; }
   function openDropPick(d, plan, tile, ev) {
     const from = d.mode === 'handbranch' ? { belt: { x: d.from.x, y: d.from.y } } : d.propId;
@@ -8453,7 +8457,7 @@ const Build = (() => {
      The junction under the pointer (or selected) wears a short tag UNDER its tile: what it is and what it will do, read from the
      COMPILED cfg (the same fact the sidecar routes by). Only one at a time — a tag on every junction at rest was the "wall of
      text" the one-voice law exists to stop; the Workflow panel carries the same facts for the whole line. */
-  const JUNCTION_TAG_TYPES = { splitter: 1, joiner: 1, merger: 1, filter: 1, loop: 1 };
+  const JUNCTION_TAG_TYPES = { splitter: 1, joiner: 1, merger: 1, filter: 1, switch: 1, loop: 1 };
   const RING_DOCK_T = { bay: 1, intake: 1, outbox: 1 };   // machines that hook belts through a 1-tile ring (the spacing tip)
   /* A SPLIT'S MODE ONCE CREWED (2026-09-27): the compiler marks a split fan-out only when a crewed branch reaches its JOINER,
      so on a freshly stamped line (no agents yet) every split read TAKES TURNS — while the Workflow panel's strip (which compiles
@@ -8550,6 +8554,7 @@ const Build = (() => {
     if (p.t === 'joiner') return cfg && cfg.expect > 1 ? 'JOINER · WAITS FOR ' + cfg.expect : 'JOINER · WAITS';
     if (p.t === 'loop') return 'LOOP · UP TO ' + ((cfg && cfg.max) || (typeof Pipeline !== 'undefined' && Pipeline.LOOP_MAX_DEFAULT) || 5) + '×';
     if (p.t === 'filter') return 'FILTER · SORTS';
+    if (p.t === 'switch') return 'SWITCH · ' + String((cfg && cfg.field) || p.field || 'tag').toUpperCase();
     if (p.t === 'merger') return 'MERGER · SHARES';
     return null;
   }
@@ -8919,7 +8924,7 @@ const Build = (() => {
     if (p.t === 'merger') return ins + '>1';
     if (p.t === 'joiner') return 'WAITS ' + ((cfg && cfg.expect) || ins) + '/' + ((cfg && cfg.expect) || ins);
     if (p.t === 'loop') return 'UP TO x' + ((cfg && cfg.max) || (typeof Pipeline !== 'undefined' && Pipeline.LOOP_MAX_DEFAULT) || 5);
-    if (p.t === 'filter') {
+    if (p.t === 'filter' || p.t === 'switch') {
       const r = (cfg && cfg.routes) || {}, tags = Object.keys(r).map(s => String(s).slice(0, 4).toUpperCase());
       return (tags.length ? tags.join('/') + (cfg && cfg.def ? '/ELSE' : '') : (cfg && cfg.def ? 'ELSE' : 'SORTS'));
     }

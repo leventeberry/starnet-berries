@@ -18,7 +18,7 @@
   "expectedClaimCount": 37,
   "releaseSurface": {
     "algorithm": "sha256",
-    "sourceCommit": "199e7298786f47f143fe74a6cb0741bf5ab516c2",
+    "sourceCommit": "8f4865dfe01e35a99748d964fef40484fd263c76",
     "pathSetSha256": "9d8bf8dfddb4c0e306c82bed638b70d1c069d25b91df106e442c6a585bfb97d0",
     "files": [
       {
@@ -338,8 +338,8 @@
       },
       {
         "path": "frontend/app/build.js",
-        "bytes": 756948,
-        "sha256": "8005975e2529784d4c906d69b1d145ebaa65df5c738e562a4222b1b5fcf11cc9"
+        "bytes": 758006,
+        "sha256": "565f6ca7dbe3c30156222bf72d106e605ca11f2e202e4326ef067f8ad8ee8478"
       },
       {
         "path": "frontend/app/buildshare.js",
@@ -398,8 +398,8 @@
       },
       {
         "path": "frontend/app/conveyor.js",
-        "bytes": 51421,
-        "sha256": "a0885210d976cb12b8d7bdae73f673264caf08ea701d1b35c4b962aeb4152b9f"
+        "bytes": 51738,
+        "sha256": "18ef1e6dcaaf6b8597233337a34ac31f6b0f4372678c4c7a8f838b45bf53068d"
       },
       {
         "path": "frontend/app/cratecard.js",
@@ -673,13 +673,13 @@
       },
       {
         "path": "frontend/app/lineedit.js",
-        "bytes": 40172,
-        "sha256": "2f961b730ba0b4bcdc5327d4120bfee830c19654499805ba91e2509e07dffc9a"
+        "bytes": 40183,
+        "sha256": "3d7e1ab9367639c1d5153d27e133cd3080f4c893ffb76c8244f2b49782fbf2b5"
       },
       {
         "path": "frontend/app/linelayout.js",
-        "bytes": 42264,
-        "sha256": "0cfdaaaea42837ee6257276558e84cbbf24d522dd5671bb31b50b874229d99c8"
+        "bytes": 42313,
+        "sha256": "05da6cdfec196d1338f775c9274aa23964afb60fddf3f983079f4bc6ab7d1356"
       },
       {
         "path": "frontend/app/linewatch.js",
@@ -803,8 +803,8 @@
       },
       {
         "path": "frontend/app/pipeline.js",
-        "bytes": 177501,
-        "sha256": "25a1c579f3ca80a06b14123ed0d4880f73fa2cf4613af3a5ced664982ec6e9ea"
+        "bytes": 180830,
+        "sha256": "4e79eb7fbd9b1a80b367362e8771b958592744177090e64f079dd4ba161745ad"
       },
       {
         "path": "frontend/app/pitch.js",
@@ -883,8 +883,8 @@
       },
       {
         "path": "frontend/app/prop-catalog-data.js",
-        "bytes": 129523,
-        "sha256": "0dfa9def52f8b744fc9186ea131a202052a7df9759a1c5751839e93b1cad4401"
+        "bytes": 130188,
+        "sha256": "5969f557f11627b5e347a08d05085bc110b87f3182174d762a0c4f0693712efe"
       },
       {
         "path": "frontend/app/prop-catalog-fixture.js",
@@ -918,8 +918,8 @@
       },
       {
         "path": "frontend/app/propsprites.js",
-        "bytes": 816242,
-        "sha256": "ea16ab09cb61b493cd3186028d3a35b88c67040104d6528a8ab260b1d78e32cd"
+        "bytes": 819380,
+        "sha256": "6bf4853a5544b8ac0cf78233259993264a95f6f947a7d11c9933db6a7907349e"
       },
       {
         "path": "frontend/app/prospect.js",
@@ -1223,13 +1223,13 @@
       },
       {
         "path": "frontend/app/stationbuilder.js",
-        "bytes": 431274,
-        "sha256": "528616b17985fc2ce82a2cd045b1d60271fd5d9c7c28d8fc8ac188f75777df46"
+        "bytes": 431938,
+        "sha256": "eb58a394829ca4d2374c0a1294a154efb5bf7067ba1ab1fba834b3d63477f030"
       },
       {
         "path": "frontend/app/stationcommands.js",
-        "bytes": 113075,
-        "sha256": "dcd487e3a70d7173cdef4028be1dc26a1d8250bfeef6726bcb19baf66c66c468"
+        "bytes": 113187,
+        "sha256": "768cdae812bacb2f3f4a68bcb787d0ed93901aa21c3cab69c6e1fd64dafa8d52"
       },
       {
         "path": "frontend/app/stationdesign.js",
@@ -1503,8 +1503,8 @@
       },
       {
         "path": "frontend/app/workflowpanel.js",
-        "bytes": 220382,
-        "sha256": "eaee932214f8409a2e2a4d4e6057f7070236719f0557d03ca64cb98a044bf937"
+        "bytes": 227126,
+        "sha256": "da6168ebd0c600f9493edd0c247ed1d82dc665a8448dbdf660ddd9e614617018"
       },
       {
         "path": "frontend/app/workflowtakeoverstore.js",
@@ -1568,8 +1568,8 @@
       },
       {
         "path": "frontend/app/worldmodel.js",
-        "bytes": 367732,
-        "sha256": "cab15a29f7034a29853fe3182f7737cb9566ba701a4f25ebe8272a963894173d"
+        "bytes": 368613,
+        "sha256": "d5407d8c25c5ceadceb17dcd6740032f9550e1f33424bfada28b896e32132552"
       },
       {
         "path": "frontend/app/worldrenderer.js",

@@ -3498,6 +3498,43 @@ const PropSprites = (() => {
     px(dx0 + 4, dt + 6, 1, 1, blink(420, ph) ? '#d8b8ff' : shade(ACC.mem, -0.5)); // sorting LED
   };
 
+  F.switch = (x, y, w, h, f) => {
+    // SWITCH (1x1, starnet-berries) — the FILTER's deck box with a ROTARY SELECTOR instead of the sorting cartridge: one dial,
+    // its pointer stepping between case stops, reads "you set the cases" where the filter's cartridge reads "it sorts by type".
+    const r = RAMP.steel, on = !!(f && f.work), ph = (f && f.x) || 0;
+    const ROUTE = [ACC.data, ACC.flow, '#8a9a90'], sel = Math.floor(now / (on ? 800 : 1400)) % 3, rc = ROUTE[sel];
+    shadow2(x + 1, y + h - 1, w - 2);
+    chamf(x - 1, y + 5, w + 2, 6, LINE, 1);
+    chamf(x, y + 6, w, 4, r.face, 1);
+    px(x + 1, y + 6, w - 2, 1, r.lit); keyEdge(x + 2, y + 6, 5, 1, 0.16);
+    px(x + 1, y + 9, w - 2, 1, r.ao);
+    px(x + 2, y + 8, 1, 1, '#caa84a'); px(x + w - 3, y + 8, 1, 1, '#caa84a');
+    chamf(x - 1, y, w + 2, 7, LINE, 1);
+    chamf(x, y + 1, w, 5, r.top, 1);
+    px(x + 1, y + 1, w - 2, 1, r.sheen); keyEdge(x + 1, y + 1, 3, 1, 0.26);
+    px(x, y + 2, 1, 3, r.lit); px(x + w - 1, y + 2, 1, 3, r.dk); rimEdge(x + w - 1, y + 2, 1, 3, 0.20);
+    px(x + 1, y + 5, w - 2, 1, shade(r.top, -0.18));
+    px(x + 1, y + 2, w - 2, 3, '#0c1418'); px(x + 1, y + 2, w - 2, 1, '#081014');   // teal lane well
+    px(x + 1, y + 3, 4, 1, on ? shade(ACC.data, 0.10) : shade(ACC.data, -0.30));  // trunk IN
+    px(x + 8, y + 3, 3, 1, shade(rc, -0.15));                                      // switched lane OUT
+    for (let i = 0; i < 3; i++) {                                                    // case tips, one lit
+      const ty = y + 2 + i;
+      px(x + w - 2, ty, 2, 1, i === sel ? ROUTE[i] : shade(ROUTE[i], -0.62));
+      if (i === sel) bloom(x + w - 2, ty, 2, 1, ROUTE[i], on ? 0.34 : 0.20);
+    }
+    // ROTARY SELECTOR — a round dial on a short post; its pointer steps to the case it picked
+    const cx = x + 5, cy = y - 3;
+    px(x + 4, y - 1, 4, 2, LINE); px(x + 5, y - 1, 2, 1, shade(r.top, 0.10));        // post
+    px(cx - 2, cy - 3, 6, 6, LINE); px(cx - 3, cy - 2, 8, 4, LINE);                  // dial rim (octagon)
+    px(cx - 1, cy - 2, 4, 4, r.face); px(cx - 2, cy - 1, 6, 2, r.face);
+    px(cx - 1, cy - 2, 4, 1, r.lit); keyEdge(cx - 1, cy - 2, 3, 1, 0.28);
+    px(cx, cy - 1, 2, 2, '#0a1216');                                                 // hub
+    const PT = [[-2, -1], [0, -2], [3, -1]][sel];                                    // pointer: left / up / right stop
+    px(cx + PT[0], cy + PT[1], 1, 1, shade(rc, on ? 0.25 : -0.05));
+    bloom(cx - 1, cy - 2, 4, 4, ACC.data, on ? 0.24 : 0.12);                          // teal halo = "this is the switch"
+    px(cx + 3, cy + 2, 1, 1, blink(420, ph) ? '#b8f0ff' : shade(ACC.data, -0.5));   // case LED
+  };
+
   F.merger = (x, y, w, h, f) => {
     // MERGER (1x1) — a LANE FUNNEL: several lanes converge into one, every crate rides straight on
     // (the buffer-K/map-reduce mechanic was removed 2026-07-26 — see conveyor.js chooseExit).
@@ -10778,6 +10815,7 @@ const PropSprites = (() => {
     { id: "intake", label: "INBOX", cat: "workflow", tier: "functional", w: 2, h: 2, animated: true, blocks: true, desc: "Your floor is a flowchart — work arrives at the INBOX, every BAY is an agent doing one step, and the belts you draw are the order the work flows. A schedule, a chat message, a watched folder or another app calling in starts the line here, and the job rides the belt to the first BAY. Belts ARE the workflow: work only moves from one agent to the next along a belt. A message you send an agent in COMMS goes to that agent alone and skips the line." },
     { id: "bay", label: "BAY", cat: "workflow", tier: "functional", w: 2, h: 2, animated: true, blocks: true, desc: "BAY — one step of a workflow. Click it and choose the agent who does this step. The belt INTO it brings the job; the belt OUT carries its result to the next BAY or the OUTBOX. A message sent to the agent in COMMS runs only this step. The props in its room become its powers." },
     { id: "filter", label: "FILTER", cat: "workflow", tier: "functional", w: 1, h: 1, animated: true, blocks: false, desc: "FILTER — sorts each job by task type: CODE, RESEARCH, or EVERYTHING ELSE, and sends each type down its own belt. A job already addressed to one agent follows that agent's belt instead. Drop it ON a belt; choose the belts in its Workflow panel." },
+    { id: "switch", artId: "filter", label: "SWITCH", cat: "workflow", tier: "functional", w: 1, h: 1, animated: true, blocks: false, desc: "SWITCH — reads one field (tag by default) from the JSON a job carries — what another app sent in, or a JSON block the step before it returned — and sends each value you list down its own belt. A job with no matching case takes the DEFAULT belt. Drop it ON a belt; list the cases in its Workflow panel." },
     { id: "merger", label: "MERGER", cat: "workflow", tier: "functional", w: 1, h: 1, animated: true, blocks: false, desc: "MERGER — lets several belts share one. Nothing waits and nothing is combined: every job goes on by itself. To wait for the branches of ONE job and combine them, use a JOINER instead." },
     { id: "splitter", label: "SPLITTER", cat: "workflow", tier: "functional", w: 1, h: 1, animated: true, blocks: false, desc: "SPLITTER — one belt into several. With a JOINER after the branches, every branch gets a COPY of the job and they run at the same time; without one, jobs TAKE TURNS between the branches (share the load). Drop it ON a belt." },
     { id: "joiner", label: "JOINER", cat: "workflow", tier: "functional", w: 1, h: 1, animated: true, blocks: false, desc: "JOINER — waits until every branch of the same job has finished (or 10 minutes pass), then sends ONE combined result on, each branch's part labelled. Put a SPLITTER before the branches so each one gets a copy." },
@@ -11115,7 +11153,7 @@ const PropSprites = (() => {
     'wartable', 'bridge_tacticaltable', 'bridge_consolebank', 'bridge_tacscreen', 'bridge_orderqueue', 'war_threatcore', 'vat',
     'research_corelens', 'research_trendpillar', 'etsy_dyevat', 'etsy_kiln',
     'gigs_thumbwall', 'gigs_amp', 'pub_outboundchute', 'treasury_pnl_holo',
-    'intake', 'bay', 'outbox', 'filter', 'merger', 'splitter', 'joiner', 'loop', 'beltH', // flow
+    'intake', 'bay', 'outbox', 'filter', 'switch', 'merger', 'splitter', 'joiner', 'loop', 'beltH', // flow
   ];
   const NOMIR_SET = NO_MIRROR.reduce((o, id) => (o[id] = 1, o), {});
 
