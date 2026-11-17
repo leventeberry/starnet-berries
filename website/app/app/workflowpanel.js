@@ -565,7 +565,7 @@ const WorkflowPanel = (() => {
   function inserterHTML(from, to, f) {
     const roles = STEP_ROLES;
     const nm = id => { const p = prop(id); return !p ? '?' : p.t === 'intake' ? 'the INBOX' : p.t === 'outbox' ? 'the OUTBOX' : dockLabel(f, id); };
-    const B = prop(to), JN = { splitter: 1, filter: 1, merger: 1, joiner: 1, loop: 1 };
+    const B = prop(to), JN = { splitter: 1, filter: 1, switch: 1, merger: 1, joiner: 1, loop: 1 };
     const lined = !!(H.lineEdit && canEdit('insertStep', from, { from, to }).ok);
     const shapes = lined ? '<div class="wf-chips" aria-label="Or a junction">'
       + editBtn('addBranch', from, { from, to, mode: 'copy' }, '⑂ BRANCH · COPY TO EACH', 'two new steps both get the job and a JOINER combines their results')
@@ -1687,6 +1687,7 @@ const WorkflowPanel = (() => {
   }
   function paintPlain(body, f, p) {
     if (p.t === 'filter') return paintFilter(body, f, p);
+    if (p.t === 'switch') return paintSwitch(body, f, p);
     if (p.t === 'outbox') return paintOutbox(body, f, p);
     const info = H.junctionInfo ? H.junctionInfo(p.id) : null, cfg = (info && info.cfg) || null, lanes = (info && info.lanes) || [];
     const dia = H.machineDiagram ? H.machineDiagram(p.t) : '';
@@ -1785,6 +1786,76 @@ const WorkflowPanel = (() => {
       body.querySelectorAll('[data-ftag="' + tag + '"]').forEach(x => x.setAttribute('aria-pressed', String(selOf(tag) === x.dataset.fdir)));
       if (note) note.textContent = cur.def ? '✓ saved' : 'Saved. Now choose a belt for EVERYTHING ELSE so no task is left without a way out.';
     }; });
+  }
+
+  /* ===== SWITCH (starnet-berries) — cases on a field of the job's JSON, each case its own belt =====
+     A FILTER with your own cases: it reads ONE field (default `tag`) from the JSON the job carries — a webhook's body, or the
+     JSON block the step before it ended its reply with — and sends each value down the belt its case names. No match, no JSON or
+     no such field = the DEFAULT belt. Cases are matched ignoring case. Saved through the same configureJunction a FILTER uses. */
+  function paintSwitch(body, f, p) {
+    const info = H.junctionInfo ? H.junctionInfo(p.id) : null, lanes = (info && info.lanes) || [];
+    const cur = { field: p.field || 'tag', routes: (p.routes && typeof p.routes === 'object') ? Object.assign({}, p.routes) : {}, def: p.def || null };
+    const FIELD_RE = /^[A-Za-z0-9_$-]{1,40}(?:\[\d{1,4}\]|\.[A-Za-z0-9_$-]{1,40}){0,7}$/;
+    const selOf = c => (c === '__def__' ? cur.def : cur.routes[c]);
+    const chipsFor = c => lanes.length ? lanes.map(l => '<button type="button" class="wf-chip" data-scase="' + esc(c) + '" data-sdir="' + l.dir + '" aria-pressed="' + (selOf(c) === l.dir) + '">' + esc(laneName(f, l, false)) + '</button>').join('') : '<span class="dim">no belt out yet</span>';
+    const cases = Object.keys(cur.routes);
+    const rows = cases.map(c => '<div class="wf-route"><span class="wf-route-k">' + esc(c) + '<small>' + esc(cur.field) + ' = ' + esc(c) + '</small></span><span class="wf-chips">' + chipsFor(c)
+        + '<button type="button" class="wf-chip" data-sdel="' + esc(c) + '" data-tip="remove this case" aria-label="remove the case ' + esc(c) + '">✕</button></span></div>').join('')
+      + '<div class="wf-route"><span class="wf-route-k">DEFAULT<small>no match, no JSON, or no such field</small></span><span class="wf-chips">' + chipsFor('__def__') + '</span></div>';
+    const save = (next, okMsg) => {
+      const res = H.station().configureJunction(p.id, { field: next.field, routes: next.routes, def: next.def });
+      const note = $('#sw-note');
+      if (!res || !res.ok) { H.sfx('bad'); if (note) note.textContent = '✕ not saved — ' + ((res && (res.msg || res.error)) || 'try again'); return false; }
+      H.sfx('click'); paint(true);
+      const n2 = $('#sw-note'); if (n2) n2.textContent = okMsg || (next.def ? '✓ saved' : 'Saved. Now choose a DEFAULT belt so no job is left without a way out.');
+      return true;
+    };
+    body.innerHTML = '<section class="wf-sec"><h3><span class="n">SWITCH</span>Send each case its own way</h3>'
+      + '<div class="wf-mode">' + (H.machineDiagram ? H.machineDiagram('switch') : '') + '<p>The switch reads one <b>field</b> from the JSON the job carries (a webhook’s body, or a JSON block the step before it returned) and sends each value down its own belt.</p></div>'
+      + (lanes.length ? '' : '<p class="wf-warnline">Run belts OUT of the switch first (drag from the SWITCH onto the next machine). Each belt out appears here.</p>')
+      + '<div class="wf-route"><span class="wf-route-k">FIELD<small>e.g. tag, type, lead.kind, items[0].sku</small></span><span class="wf-chips">'
+      + '<input id="sw-field" class="refit-input" type="text" maxlength="120" aria-label="Field to read" value="' + esc(cur.field) + '" /></span></div>'
+      + '<div class="wf-routes">' + rows + '</div>'
+      + '<div class="wf-route"><span class="wf-route-k">ADD A CASE<small>a value of ' + esc(cur.field) + '</small></span><span class="wf-chips">'
+      + '<input id="sw-new" class="refit-input" type="text" maxlength="40" aria-label="New case value" placeholder="e.g. hire" />'
+      + '<button type="button" class="wf-chip" id="sw-add"' + (lanes.length ? '' : ' aria-disabled="true"') + '>+ ADD CASE</button></span></div>'
+      + '<p class="wf-help" id="sw-note">' + (cur.def ? 'Saved as you choose.' : 'Choose a DEFAULT belt so no job is left without a way out.') + '</p>'
+      + '<p class="wf-help dim">To switch on an agent’s answer, tell the step before it to end its reply with a JSON block such as {"' + esc(cur.field) + '": "hire"}. A job already addressed to one agent follows that agent’s belt instead.</p></section>';
+    wireEdits(body);
+    body.querySelectorAll('[data-scase]').forEach(b => { b.onclick = () => {
+      const c = b.dataset.scase, dir = b.dataset.sdir, next = { field: cur.field, routes: Object.assign({}, cur.routes), def: cur.def };
+      if (c === '__def__') next.def = cur.def === dir ? null : dir;
+      else if (next.routes[c] === dir) delete next.routes[c]; else next.routes[c] = dir;
+      save(next);
+    }; });
+    body.querySelectorAll('[data-sdel]').forEach(b => { b.onclick = () => {
+      const next = { field: cur.field, routes: Object.assign({}, cur.routes), def: cur.def };
+      delete next.routes[b.dataset.sdel];
+      save(next, '✓ case removed');
+    }; });
+    const fieldIn = $('#sw-field');
+    if (fieldIn) {
+      const commit = () => {
+        const v = fieldIn.value.trim();
+        if (v === cur.field) return;
+        if (!FIELD_RE.test(v)) { H.sfx('bad'); const note = $('#sw-note'); if (note) note.textContent = '✕ a field is a name like tag, a dotted path like lead.kind, or items[0].sku'; return; }
+        save({ field: v, routes: cur.routes, def: cur.def }, '✓ now reading ' + v);
+      };
+      fieldIn.addEventListener('blur', commit);
+      fieldIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') { e.stopPropagation(); fieldIn.blur(); } });
+    }
+    const addIn = $('#sw-new'), addBtn = $('#sw-add');
+    const add = () => {
+      const v = String(addIn ? addIn.value : '').trim(), note = $('#sw-note');
+      if (!lanes.length) { H.sfx('bad'); if (note) note.textContent = '✕ run a belt out of the switch first'; return; }
+      if (!v || v.length > 40) { H.sfx('bad'); if (note) note.textContent = '✕ type the value this case matches (up to 40 characters)'; return; }
+      if (Object.keys(cur.routes).some(k => k.toLowerCase() === v.toLowerCase())) { H.sfx('bad'); if (note) note.textContent = '✕ there is already a case for ' + v; return; }
+      // a new case starts on the first belt that is not the DEFAULT one (pick another chip to move it)
+      const lane = (lanes.find(l => l.dir !== cur.def) || lanes[0]).dir;
+      save({ field: cur.field, routes: Object.assign({}, cur.routes, { [v]: lane }), def: cur.def }, '✓ case ' + v + ' added — pick its belt');
+    };
+    if (addBtn) addBtn.onclick = add;
+    if (addIn) addIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } if (e.key === 'Escape') { e.stopPropagation(); addIn.blur(); } });
   }
 
   /* ===== THE STEP TEST — the whole line, pausing at every handoff (STEPTEST contract) ===== */

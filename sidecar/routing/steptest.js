@@ -252,7 +252,7 @@ function makeStepTest(o) {
     const W = s._w, cur = W.cur, curDock = W.curDock || null, raw = W.out || '';
     const basis = editedText != null ? editedText : raw;
     const reach = {};
-    const ctx = { tag: getTag(basis), verdict: editedText != null ? getVerdict(basis) : Object.prototype.hasOwnProperty.call(W, 'verdict') ? W.verdict : getVerdict(basis), lineId: s.lineId, fromTile: null, via: null, reach };
+    const ctx = { tag: getTag(basis), text: basis, verdict: editedText != null ? getVerdict(basis) : Object.prototype.hasOwnProperty.call(W, 'verdict') ? W.verdict : getVerdict(basis), lineId: s.lineId, fromTile: null, via: null, reach };
     const briefHeld = heldStop(plan.loopGateAfter, cur, s.lineId, curDock, ctx.verdict);   // the line runner's hold, before the walk
     if (briefHeld) return { next: { kind: 'end', reason: briefHeld.why }, text: raw, end: briefHeld.why, held: true, stop: briefHeld };
     const dockFn = advance ? plan.stepDock : plan.peekDock;

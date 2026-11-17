@@ -541,11 +541,11 @@ const StationCommands = (() => {
       // FILTER rules on this line: which tagged work goes to which step (the rest takes the default lane)
       const filters = [];
       for (const fp of (geo.props || [])) {
-        if (fp.t !== 'filter' || c.props.indexOf(fp.id) < 0) continue;
+        if ((fp.t !== 'filter' && fp.t !== 'switch') || c.props.indexOf(fp.id) < 0) continue;
         const jk = junctionKeyOf(fp), j = jk && plan.junctions && plan.junctions[jk], lanes = (jk && laneDocks[jk]) || {};
         if (!j || j.kind !== 'filter') continue;
         const to = dir => (lanes[dir] || []).filter(pid => step[pid]).map(ref);
-        filters.push({ propId: fp.id, rules: Object.keys(j.routes || {}).map(tag => ({ tag, goesTo: to(j.routes[tag]) })), otherwise: j.def ? to(j.def) : [] });
+        filters.push(Object.assign({ propId: fp.id, rules: Object.keys(j.routes || {}).map(tag => ({ tag, goesTo: to(j.routes[tag]) })), otherwise: j.def ? to(j.def) : [] }, j.field ? { field: j.field } : {}));   // field: a SWITCH (starnet-berries)
       }
       const mine = errors.filter(e => onLine(c, e)); mine.forEach(e => claimed.add(e));
       const out = { lineId: c.key, name: (c.intakes.map(id => propOf(id)).find(p => p && p.label) || {}).label || null, word: floorWord(c.key) || null,
