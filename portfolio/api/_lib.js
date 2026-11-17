@@ -1,6 +1,5 @@
 // Shared helpers for the serverless functions. Files that start with "_" are not routes on Vercel.
 import { createHash } from 'node:crypto';
-import Anthropic from '@anthropic-ai/sdk';
 
 export const json = (status, body, headers = {}) =>
   new Response(JSON.stringify(body), {
@@ -74,39 +73,11 @@ export async function sendToStarNet(kind, payload) {
   }
 }
 
-// ---------- Claude ----------
-export const hasClaude = () => Boolean(process.env.ANTHROPIC_API_KEY);
-let client;
-export async function askClaude({ system, prompt, maxTokens = 2000, effort = 'low' }) {
-  client ||= new Anthropic();
-  const response = await client.beta.messages.create({
-    model: process.env.ANTHROPIC_MODEL || 'claude-opus-5-5',
-    max_tokens: maxTokens,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
-    output_config: { effort },
-    system,
-    messages: [{ role: 'user', content: prompt }],
-  });
-  if (response.stop_reason === 'refusal') throw new HttpError(422, 'The agent declined that one. Try rephrasing it.');
-  return response.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
-}
-
-export function claudeError(err) {
-  if (err instanceof HttpError) return err;
-  if (err instanceof Anthropic.RateLimitError) return new HttpError(429, 'The agent is busy. Try again in a minute.');
-  if (err instanceof Anthropic.APIError) {
-    console.error('Claude API error', err.status, err.message);
-    return new HttpError(502, 'The agent hit a snag. Try again shortly.');
-  }
-  console.error(err);
-  return new HttpError(500, 'Something broke on my side.');
-}
-
 // Wraps a handler so thrown HttpErrors become clean JSON responses.
 export const handle = (fn) => async (request) => {
   try { return await fn(request); } catch (err) {
-    const e = err instanceof HttpError ? err : claudeError(err);
-    return json(e.status, { ok: false, error: e.message });
+    if (err instanceof HttpError) return json(err.status, { ok: false, error: err.message });
+    console.error(err);
+    return json(500, { ok: false, error: 'Something broke on my side.' });
   }
 };

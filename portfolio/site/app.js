@@ -53,11 +53,11 @@ async function post(path, body) {
 const formData = (form) => Object.fromEntries(new FormData(form).entries());
 const busy = (btn, on, label) => { btn.disabled = on; if (label) btn.textContent = label; };
 
-let status = { leads: false, audit: { ai: false }, cover: { ai: false }, contactEmail: '' };
+let status = { leads: false, audit: {}, cover: {}, contactEmail: '' };
 fetch('/api/status').then((r) => r.json()).then((s) => {
   status = s;
-  const live = s.leads || s.audit?.ai;
-  $('#agent-status').textContent = live ? 'My agents are online.' : 'My agents are offline right now, so this runs the checks only.';
+  const live = Boolean(s.leads);
+  $('#agent-status').textContent = live ? 'My agents are online.' : 'My agents are offline right now, so this runs the instant checks only.';
   $('#agent-pulse').classList.toggle('is-off', !live);
 }).catch(() => {
   $('#agent-status').textContent = 'My agents are offline right now.';
@@ -141,7 +141,7 @@ auditForm.addEventListener('submit', async (e) => {
   const btn = $('button', auditForm);
   busy(btn, true, 'Reviewing…');
   auditOut.innerHTML = thinking('Fetching the page and running checks…');
-  const steps = ['Timing the server…', 'Reading SEO tags…', 'Checking security headers…', 'Asking the agent for fixes…'];
+  const steps = ['Timing the server…', 'Reading SEO tags…', 'Checking security headers…', 'Scoring the results…'];
   let i = 0; const iv = setInterval(() => { const s = $('.thinking span:last-child', auditOut); if (s && i < steps.length) s.textContent = steps[i++]; }, 1400);
   const r = await post('/api/audit', data);
   clearInterval(iv);
@@ -168,9 +168,8 @@ function renderAudit(rep) {
     </div>
     ${fails.length ? `<ul class="checks">${fails.map(checkHtml).join('')}</ul>` : '<p class="muted">Every check passed. Nice.</p>'}
     ${passes.length ? `<details class="passed"><summary>${passes.length} checks passed</summary><ul class="checks">${passes.map(checkHtml).join('')}</ul></details>` : ''}
-    ${rep.advice ? `<div class="advice"><h4>What the AI would fix first</h4>${esc(rep.advice)}</div>` : ''}
     <div class="followup">
-      <p class="muted" style="margin:0">Want the full write-up? My agents will draft it and I'll send it to you.</p>
+      <p class="muted" style="margin:0">Want the full write-up? My AI agent ranks the fixes, I review it, and I email it to you.</p>
       <form class="row-form" id="audit-follow" novalidate>
         <input name="email" type="email" autocomplete="email" placeholder="you@business.com" required>
         <button class="btn btn-ghost" type="submit">Email me the report</button>
@@ -189,7 +188,7 @@ function renderAudit(rep) {
     busy(btn, true, 'Sending…');
     const r = await post('/api/audit', { url: lastAudit.url, email });
     busy(btn, false, 'Email me the report');
-    if (r.ok && r.report.followUp === 'queued') { note.className = 'form-note ok'; note.textContent = 'Queued. My agent is writing the full report now.'; }
+    if (r.ok && r.report.followUp === 'queued') { note.className = 'form-note ok'; note.textContent = 'Got it. My agent is writing it now, and you\'ll get it by email once I\'ve checked it.'; }
     else { note.className = 'form-note err'; note.textContent = r.error || 'The report agent is offline right now. Use the contact form below and I\'ll send it by hand.'; }
   });
 }
@@ -201,26 +200,14 @@ coverForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const data = formData(coverForm);
   if ((data.posting || '').trim().length < 80) { coverOut.innerHTML = errBox('Paste a bit more of the job post (a few sentences at least).'); return; }
+  if (!/^\S+@\S+\.\S+$/.test(data.email || '')) { coverOut.innerHTML = errBox('Add your email so I can send you the letter.'); return; }
   const btn = $('button[type=submit]', coverForm);
-  busy(btn, true, 'Writing…');
-  coverOut.innerHTML = thinking('Reading the post and matching it to my work…');
+  busy(btn, true, 'Sending…');
+  coverOut.innerHTML = thinking('Handing the post to my writing agent…');
   const r = await post('/api/cover-letter', data);
-  busy(btn, false, 'Check the fit');
+  busy(btn, false, 'Send it to my agent');
   if (!r.ok) { coverOut.innerHTML = errBox(r.error || 'That did not work.'); return; }
-  if (!r.letter) {
-    coverOut.innerHTML = `<div class="advice"><h4>Sent to my agents</h4>The writing agent will draft this and I'll review it${data.email ? ' and email you' : ''}. Thanks for thinking of me.</div>`;
-    return;
-  }
-  coverOut.innerHTML = `
-    ${r.fit ? `<span class="fit ${esc(r.fit)}">${esc(r.fit)} fit</span>` : ''}
-    <div class="letter"><h4>Why I'm a fit${data.company ? ` for ${esc(data.company)}` : ''}</h4>${esc(r.letter)}</div>
-    ${r.picks?.length ? `<div class="picks">${r.picks.map((p) => `<div class="pick"><b>${esc(p.name)}</b><div class="muted">${esc(p.why)}</div></div>`).join('')}</div>` : ''}
-    <div class="copy-row"><button class="btn btn-ghost" type="button" id="copy-letter">Copy letter</button>
-      <a class="btn btn-primary" href="#contact">Talk to me</a></div>
-    ${r.queued ? '<p class="muted" style="font-size:14px">A copy went to my inbox, so I\'ll see this too.</p>' : ''}`;
-  $('#copy-letter').addEventListener('click', async (ev) => {
-    try { await navigator.clipboard.writeText(r.letter); ev.target.textContent = 'Copied ✓'; } catch { ev.target.textContent = 'Copy failed'; }
-  });
+  coverOut.innerHTML = `<div class="advice"><h4>Sent to my agent</h4>It's writing the fit letter now. I'll read it, then email it to ${esc(data.email)}. Thanks for thinking of me.</div>`;
 });
 
 // ---------- nav + reveal ----------
