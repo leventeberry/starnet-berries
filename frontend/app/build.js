@@ -3513,6 +3513,7 @@ const Build = (() => {
   }
   // the machines a line is made of — clicking one on the floor opens/selects it in the panel
   const WF_PART = { bay: 1, intake: 1, outbox: 1, loop: 1, joiner: 1, merger: 1, splitter: 1 };
+  WF_PART.filter = 1; WF_PART.switch = 1;   // starnet-berries: a click on a FILTER or SWITCH opens its cases in the panel too
   let wfHighlightId = null, wfPaused = null, wfHostMemo = null, wfKitAuto = false;   // wfKitAuto: the panel minimized the Build Library (and owes it back)
   let wfShownPart = null;   // the part the panel last showed (its close-time highlight(null) leaves it): the line DONE keeps clear of the library
   let wfArtRev = -1, wfArtAt = 0;   // the authored-art revision the panel's tiles were last painted at (frame(): repaint when it moves)

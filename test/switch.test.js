@@ -109,4 +109,14 @@ const floor = sw => P.compileRoutingPlan(geo(
   A.ok(wm.configureJunction(bad.id, { routes: { [long]: 'E' } }).ok && wm.propById(bad.id).routes[long] === 'E', 'a case value longer than a filter tag (24+) is kept');
 }
 
+/* ---- the panel: a floor click on a SWITCH opens its cases (LeVente 2026-11-17: "no options in the right menu") ---- */
+{
+  const fs = require('fs'), path = require('path');
+  const build = fs.readFileSync(path.join(__dirname, '../frontend/app/build.js'), 'utf8');
+  const panel = fs.readFileSync(path.join(__dirname, '../frontend/app/workflowpanel.js'), 'utf8');
+  A.ok(/WF_PART\.filter = 1; WF_PART\.switch = 1;/.test(build), 'a floor click on a SWITCH (or FILTER) opens it in the Workflow panel');
+  A.ok(/if \(p\.t === 'switch'\) return paintSwitch\(body, f, p\);/.test(panel), 'the panel paints the SWITCH card');
+  A.ok(/save\(\{ field: v, routes: cur\.routes, def: cur\.def \}, '✓ now reading ' \+ v, true\)/.test(panel), 'the FIELD saves on blur without repainting the box the next click lands in');
+}
+
 A.report('switch');
