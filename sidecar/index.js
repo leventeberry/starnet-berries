@@ -335,7 +335,9 @@ const { foldLineIntoFire } = require('./routing/line-fire.js');   // a routine's
 const { routineRunIdentity, runsAsCommand, isRoutineTrigger } = require('./routine-identity.js');   // a routine run's identity + command rule, shared by the tick and Run Now (quick win 31)
 const RunWire = require('./run-wire.js');   // the ONE {provider, model} decision every entry point asks (runWireFor, run-wire-resolver lane)
 const { makeStepTest } = require('./routing/steptest.js');   // the conveyor STEP-THROUGH TEST engine (/api/routing/steptest)
-const LineJobs = require('./routing/linejobs.js');   // WORKFLOWS — every job sent down a line, kept as one record the window and the OUTBOX open (/api/line-jobs)
+const LineJobs = require('./routing/linejobs.js');
+const { makeLineMailHost } = require('./routing/line-mail-host.js');   // starnet-berries: email a webhook job's approved result (Resend)
+let lineMailHost = null;   // starnet-berries: built beside the triggers below; the line runner's finish tells it a job settled   // WORKFLOWS — every job sent down a line, kept as one record the window and the OUTBOX open (/api/line-jobs)
 const LineContinuation = require('./routing/line-continuation.js'); // private saved-walk and exact attempt authority; no public resume route
 const LineEntryInvocation = require('./routing/line-entry-invocation.js'); // private actual-run observation; no public caller or saved-floor grant
 const LineEntryAdoption = require('./routing/line-entry-adoption.js'); // private receipt/cursor bridge; no public or paid activation
@@ -6753,7 +6755,11 @@ const lineRunner = LineRunner.makeLineRunner({ chain: chainRunner, runOnce, now:
     return () => lease.release();
   } },
   // Lazy closures: the durable job store is initialized below before any entry can dispatch work.
-  jobs: { start: rec => lineJobsSet(state => LineJobs.start(state, rec)), finish: (id, rec) => lineJobsSet(state => LineJobs.finish(state, id, rec)),
+  jobs: { start: rec => lineJobsSet(state => LineJobs.start(state, rec)), finish: (id, rec) => {
+    const done = lineJobsSet(state => LineJobs.finish(state, id, rec));
+    if (done && lineMailHost) lineMailHost.settled(done);   // starnet-berries: an approved, delivered webhook job is emailed (never throws)
+    return done;
+  },
     get: id => LineJobs.get(lineJobs, id), mark: (id, status) => lineJobsSet(state => LineJobs.mark(state, id, status)), all: () => lineJobs.jobs,
     hold: (id, revision, continuation) => lineJobsHold(id, revision, continuation) },
   /* THE HOLD'S HOST PROOFS (line-hold lane, S3): a walk that stops at a reviewer's gate is saved as a held continuation on its own job
@@ -14888,6 +14894,23 @@ const triggerSeenStore = makeDomainStore({
   decode: envelope => (envelope && envelope.seen && typeof envelope.seen === 'object' && !Array.isArray(envelope.seen)) ? envelope.seen : undefined,
   onIssue: reportDomainStoreIssue('triggers-seen')
 });
+/* starnet-berries: LINE MAIL (sidecar/routing/line-mail*.js). A webhook trigger with config.mail turns its job into an email to the
+   body's "email": the line drafts it, a gate holds it for the Commander, and only an APPROVED, delivered job is sent through Resend.
+   The key is the KEYS tab's RESEND_API_KEY, read from the environment at each send. */
+const lineMailStore = makeDomainStore({
+  fs, path, file: path.join(WORKSPACES, 'line-mail.json'), version: 1, writeDurable: writeFileDurable,
+  defaults: () => ({ jobs: {} }),
+  normalize: value => (value && value.jobs && typeof value.jobs === 'object' && !Array.isArray(value.jobs)) ? { jobs: value.jobs } : { jobs: {} },
+  encode: value => ({ jobs: value.jobs }),
+  decode: envelope => (envelope && envelope.jobs && typeof envelope.jobs === 'object') ? { jobs: envelope.jobs } : undefined,
+  onIssue: reportDomainStoreIssue('line-mail')
+});
+lineMailHost = makeLineMailHost({
+  store: lineMailStore, fetch: (u, o) => globalThis.fetch(u, o), key: () => process.env.RESEND_API_KEY || '',
+  jobs: { get: id => LineJobs.get(lineJobs, id), setMail: (id, mail, failed) => lineJobsSet(state => LineJobs.setMail(state, id, mail, failed)) },
+  notify: text => pingOwnerChats(text), now: () => Date.now(), warn: msg => console.warn(msg)
+});
+setImmediate(() => { try { lineMailHost.boot(); } catch (e) { failNote('line-mail.boot', e); } });
 const triggerSettleMs = (() => { const n = parseInt(ENV('TRIGGER_SETTLE_MS'), 10); return Number.isFinite(n) && n >= 0 ? n : 2000; })();
 const triggerPollMs = (() => { const n = parseInt(ENV('TRIGGER_POLL_MS'), 10); return Number.isFinite(n) && n >= 250 ? n : 3000; })();
 const triggerWatcher = makeFolderWatcher({ fsp, pathMod: path, settleMs: triggerSettleMs });
@@ -14979,10 +15002,6 @@ const triggerRunner = makeTriggerRunner({
    off). The line names the trigger, the outcome and where to read the result; it never carries the webhook body. */
 function notifyTriggerFinished(t, outcome, err) {
   if (!t || t.kind !== 'webhook') return;
-  if (!(channelSecrets && channelSecrets.notifyAutonomous)) return;
-  let map;
-  try { map = channelStore.loadChatMap(); } catch (_) { return; }
-  const chats = (map && map.chats) || {}, seen = new Set();
   const o = outcome || {};
   const name = String(t.name || 'a webhook').slice(0, 60);
   const usd = typeof o.usd === 'number' && o.usd > 0 ? ' ($' + o.usd.toFixed(2) + ')' : '';
@@ -14990,13 +15009,21 @@ function notifyTriggerFinished(t, outcome, err) {
     ? 'New work from webhook "' + name + '" is ready' + usd + (o.unapproved ? ' (not approved by its review step)' : '') + '. Open WORKFLOWS › LAST JOBS to read it.'
     : o.stopped ? 'The job from webhook "' + name + '" was stopped.'
     : 'The job from webhook "' + name + '" did not finish' + (err ? ': ' + String(err).slice(0, 160) : '.') + ' See WORKFLOWS › LAST JOBS.';
+  pingOwnerChats(text, o.agentId);
+}
+// starnet-berries: one line to every chat the owner opened (when "notify me about autonomous work" is on)
+function pingOwnerChats(text, agentId) {
+  if (!(channelSecrets && channelSecrets.notifyAutonomous)) return;
+  let map;
+  try { map = channelStore.loadChatMap(); } catch (_) { return; }
+  const chats = (map && map.chats) || {}, seen = new Set();
   for (const key of Object.keys(chats)) {
     const rec = chats[key];
     if (!rec) continue;
     const chatId = String(rec.chatId || key), channel = rec.channel || 'telegram';
     if (seen.has(chatId)) continue;
     seen.add(chatId);
-    channelOutbound.send(key, redact(text), { durable: false, reason: 'notify', agentId: o.agentId || undefined })
+    channelOutbound.send(key, redact(text), { durable: false, reason: 'notify', agentId: agentId || undefined })
       .then(r => { if (r && r.ok === false) console.warn('[triggers] webhook ping not sent [' + channel + ']:', r.error); })
       .catch(e => console.warn('[triggers] webhook ping failed:', (e && e.message) || e));
   }
@@ -15259,8 +15286,9 @@ async function serveTriggerHook(req, res, id) {
         return acceptance(job.id, job.streamId);
       }
     }, async (jobId, _progress, receipt) => {
+      const label = lineMailHost ? lineMailHost.admit(t, raw, jobId) : '';   // starnet-berries: written down before the job runs (throws -> 503, retry)
       const r = triggerRunner.enqueue(id, { text, preview: 'HOOK ' + (t.name || 'webhook'), source: 'webhook · ' + wb.bytes + ' bytes',
-        jobId, delivery: { triggerId: id, reservationId: receipt.id, fingerprint: receipt.fingerprint } });
+        name: label || undefined, jobId, delivery: { triggerId: id, reservationId: receipt.id, fingerprint: receipt.fingerprint } });
       if (r.ok) return acceptance(r.jobId, r.streamId, r.queued);
       // 429 is returned only before enqueue changes the rate window or opens a durable job.
       if (r.code === 'rate' || r.code === 'busy') return { status: 429, body: { ok: false, error: r.error },

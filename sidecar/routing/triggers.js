@@ -21,6 +21,7 @@
 'use strict';
 const nodeCrypto = require('node:crypto');
 const RunOutcome = require('../../frontend/app/runoutcome.js');
+const LineMail = require('./line-mail.js');   // starnet-berries: a webhook may email its approved result (config.mail)
 
 const KINDS = ['folder', 'webhook'];
 const ID_RE = /^trg_[a-z0-9]{8,24}$/;
@@ -50,6 +51,9 @@ function normalizeConfig(kind, c) {
   c = (c && typeof c === 'object' && !Array.isArray(c)) ? c : {};
   const out = { task: str(c.task, TASK_MAX) };
   if (kind === 'folder') out.path = str(c.path, PATH_MAX);
+  // starnet-berries: config.mail { from, replyTo } — a webhook job's approved result is emailed to the body's "email" (line-mail.js)
+  const mail = kind === 'webhook' ? LineMail.normCfg(c.mail) : null;
+  if (mail) out.mail = mail;
   return out;
 }
 
@@ -153,6 +157,11 @@ function validateInput(body, opts) {
     f.config = {};
     if (b.config.task !== undefined || !partial) f.config.task = str(b.config.task, TASK_MAX);
     if (b.config.path !== undefined) f.config.path = str(b.config.path, PATH_MAX);
+    if (b.config.mail !== undefined && b.config.mail !== null) {   // starnet-berries
+      const mail = LineMail.normCfg(b.config.mail);
+      if (!mail) return { ok: false, error: 'config.mail needs a valid "from" (Name <you@domain>) and an optional valid "replyTo"' };
+      f.config.mail = mail;
+    } else if (b.config.mail === null) f.config.mail = null;
   }
   if (!partial && f.kind === 'folder' && !(f.config && f.config.path)) return { ok: false, error: 'a folder trigger needs config.path (the folder to watch)' };
   return { ok: true, fields: f };

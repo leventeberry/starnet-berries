@@ -203,6 +203,7 @@ function makeTriggerRunner(deps) {
     if (item.jobId) {
       queued.streamId = 'trigger-' + String(item.jobId).replace(/^job-/, '');
       queued.job = lineRunner.open({ id: item.jobId, line: t.lineId, entry: 'trigger', text: queued.text,
+        name: item.name ? String(item.name).slice(0, 60) : undefined,   // starnet-berries: the job's label (line-mail: 'Fit Letter', …)
         streamId: queued.streamId, at: nowMs, delivery: item.delivery,
         stopHandle: queueStopOwner(id, s, queued) });
     }

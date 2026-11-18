@@ -37,6 +37,7 @@
 const RunOutcome = require('../../frontend/app/runoutcome.js');   // the line's stop codes and outcomes (LINE_STOPS / LINE_OUTCOMES)
 const Continuation = require('./line-continuation.js');
 const Accounting = require('./line-accounting.js');
+const LineMail = require('./line-mail.js');   // starnet-berries: the email a webhook job sends once a person approves it
 const owns = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 const PRESERVED_SOURCE = Symbol('line-jobs original non-rewriteable rows');
 
@@ -122,6 +123,9 @@ function normJob(j) {
   const ua = str(j.unapproved, 300).trim();
   if (ua) job.unapproved = ua;
   // (additive) a standing refusal counted on one record: how many hand-offs it stands for
+  // (additive, starnet-berries) the email this job sends through Resend: its state, the Resend email id, or why it was not sent
+  const mail = LineMail.normMail(j.mail);
+  if (mail) job.mail = mail;
   const rep = Math.floor(num(j.repeats));
   if (rep > 1) job.repeats = Math.min(rep, 1e6);
   // (additive, line-job-runner) the door it came in by, how it ended and where its walk stopped (header)
@@ -318,6 +322,19 @@ function link(state, id, sentTo) {
   const jobs = state.jobs.slice(); jobs[i] = job;
   return { state: withJobs(state, jobs), job };
 }
+/* starnet-berries: the email a finished job sent (line-mail-host.js). `failed` = the send failed: the job is marked failed with the
+   reason, since what it was for (the email) did not happen. */
+function setMail(state, id, mail, failed) {
+  writable(state);
+  const i = idx(state, id), m = LineMail.normMail(mail);
+  if (i < 0 || !m) return { state, job: null };
+  const patch = { mail: m };
+  if (failed) Object.assign(patch, { status: 'failed', outcome: 'failed', error: 'Email not sent: ' + (m.error || 'unknown error') });
+  const job = normJob(Object.assign({}, state.jobs[i], patch));
+  if (!job) return { state, job: null };
+  const jobs = state.jobs.slice(); jobs[i] = job;
+  return { state: withJobs(state, jobs), job };
+}
 // a standing refusal again: the same record counts one more hand-off it refused (repeats), its end time moves to now
 function again(state, id, at) {
   writable(state);
@@ -405,6 +422,7 @@ function summary(j) {
     usd: j.usd, steps: j.runs.length, preview: j.output.replace(/\s+/g, ' ').trim().slice(0, 240), error: j.error, retryOf: j.retryOf,
     streamId: j.streamId, notes: j.notes.length, from: j.from || null, sentTo: j.sentTo || null };
   if (j.repeats > 1) s.repeats = j.repeats;
+  if (j.mail) s.mail = j.mail;   // starnet-berries
   if (j.unapproved) s.unapproved = j.unapproved;
   // (additive, line-job-runner) the door, the job's end and where it stopped — the WORKFLOWS rows and card read them
   if (j.entry) s.entry = j.entry;
@@ -601,6 +619,6 @@ function forgetVia(mutate, bound, why, at) {
   return ids.length;
 }
 
-module.exports = { start, finish, mark, note, link, again, latest, byStream, boot, list, get, isId, normalizeAll, normJob, summary, retain, checkpoint, claimDecision, refuseDecision, assertWritable: writable, forgetUnfinished, forgetVia,
+module.exports = { start, finish, mark, note, link, setMail, again, latest, byStream, boot, list, get, isId, normalizeAll, normJob, summary, retain, checkpoint, claimDecision, refuseDecision, assertWritable: writable, forgetUnfinished, forgetVia,
   accounting, observeAccounting, enrollAccounting, decodeEnvelope, encodeEnvelope, prepareEntry, checkpointEntry, entryBootPending, adoptEntry,
   MAX_JOBS, MAX_HELD, MAX_OUTPUT, MAX_TEXT, MAX_NOTES, ENTRIES: Object.keys(ENTRIES) };
