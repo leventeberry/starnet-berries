@@ -37,6 +37,8 @@ WORKDIR /app
 RUN chown node:node /app
 USER node
 COPY --chown=node:node package.json package-lock.json ./
+# starnet-berries: no CUDA build of onnxruntime-node (CPU only; its GPU download now 404s). See .npmrc.
+ENV ONNXRUNTIME_NODE_INSTALL_CUDA=skip
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 # --chown here instead of a later `chown -R`, which would copy every file into a second layer
 COPY --chown=node:node . .

@@ -7,8 +7,6 @@ name: deploy-image
 on:
   push:
     branches: [main]
-    # starnet-berries: the portfolio deploys on Vercel, not in the StarNet image.
-    paths-ignore: ['portfolio/**']
   workflow_dispatch:
 
 concurrency:
