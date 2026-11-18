@@ -5,7 +5,7 @@
    and the line delivers does the host send it through Resend (index.js lineMail*). Nothing here does IO: no fs, no fetch, no clock.
 
      envelopeFrom(cfg, rawBody)  -> { ok:true, envelope } | { ok:false, reason }
-        cfg      the trigger's config.mail { from, replyTo }
+        cfg      the trigger's config.mail { from, replyTo, bcc? } (bcc: the Commander's own copy of every email sent, to keep or forward)
         rawBody  the webhook body exactly as received; JSON with an `email`. `replyFrom` (optional) replaces the sender when it is
                  a well-formed address on the SAME domain as cfg.from (a body can never send as someone else). `kind`/`jobType`
                  pick the label.
@@ -13,11 +13,14 @@
      approvedByPerson(job)       -> did a PERSON approve this job's hold (its last decision that was not refused is APPROVE)?
      compose(envelope, output)   -> { ok:true, subject, text } | { ok:false, reason }   the delivered output as the email: a first line
                                     "Subject: …" is the subject, every VERDICT line is dropped
-     request(envelope, msg, jobId) -> { url, idempotencyKey, body }   the Resend call (the caller adds Authorization at send time)
+     request(envelope, msg, jobId) -> { url, idempotencyKey, body }   the Resend call (the caller adds Authorization at send time): the
+                                    designed HTML (line-mail-html.js) with its plain-text part, and the bcc copy when the config names one
+     plainOf(envelope, msg)      -> the plain-text part as sent (the Commander's copy in chat)
      readResponse(status, json)  -> { ok:true, id } | { ok:false, error }
      normMail(m)                 -> the bounded `mail` field a LineJob keeps */
 'use strict';
 
+const Html = require('./line-mail-html.js');
 const RESEND_URL = 'https://api.resend.com/emails';
 const EMAIL_RE = /^[^\s@<>",;:()[\]\\]{1,64}@[A-Za-z0-9-]{1,63}(\.[A-Za-z0-9-]{1,63})+$/;
 const NAME_RE = /^[^<>"\r\n\\]{1,80}$/;
@@ -44,8 +47,11 @@ function labelFor(kind, jobType) { return LABELS[str(kind, 20).toLowerCase()] ||
 function normCfg(c) {
   if (!c || typeof c !== 'object' || Array.isArray(c)) return null;
   const from = parseAddress(c.from), replyTo = c.replyTo == null || c.replyTo === '' ? null : parseAddress(c.replyTo);
-  if (!from || (c.replyTo && !replyTo)) return null;
-  return { from: formatAddress(from), replyTo: replyTo ? replyTo.email : '' };
+  const bcc = c.bcc == null || c.bcc === '' ? null : parseAddress(c.bcc);
+  if (!from || (c.replyTo && !replyTo) || (c.bcc && (!bcc || bcc.name))) return null;
+  const out = { from: formatAddress(from), replyTo: replyTo ? replyTo.email : '' };
+  if (bcc) out.bcc = bcc.email;
+  return out;
 }
 
 function envelopeFrom(cfg, rawBody) {
@@ -60,7 +66,9 @@ function envelopeFrom(cfg, rawBody) {
   const asked = body.replyFrom == null || body.replyFrom === '' ? null : parseAddress(body.replyFrom);
   if (asked && domainOf(asked.email) === domainOf(from.email)) from = asked;   // another domain is never honoured
   const label = labelFor(body.kind, body.jobType);
-  return { ok: true, envelope: { to: to.email, from: formatAddress(from), replyTo: c.replyTo, kind: str(body.kind, 20), label, state: 'waiting' } };
+  const envelope = { to: to.email, from: formatAddress(from), replyTo: c.replyTo, kind: str(body.kind, 20), label, state: 'waiting' };
+  if (c.bcc && c.bcc.toLowerCase() !== to.email.toLowerCase()) envelope.bcc = c.bcc;
+  return { ok: true, envelope };
 }
 
 /* A person approved: the hold's decisions, newest last; a refused decision changes nothing, so the last one that was not refused
@@ -87,8 +95,10 @@ function compose(env, output) {
 }
 
 function request(env, msg, jobId) {
-  const body = { from: env.from, to: [env.to], subject: msg.subject, text: msg.text };
+  const designed = Html.render(env, msg);
+  const body = { from: env.from, to: [env.to], subject: msg.subject, html: designed.html, text: designed.text };
   if (env.replyTo) body.reply_to = env.replyTo;
+  if (env.bcc && EMAIL_RE.test(env.bcc)) body.bcc = [env.bcc];
   if (env.label) body.tags = [{ name: 'kind', value: env.label.toLowerCase().replace(/[^a-z0-9_-]+/g, '_') }];
   return { url: RESEND_URL, idempotencyKey: 'starnet-' + String(jobId), body };
 }
@@ -109,4 +119,6 @@ function normMail(m) {
   return out;
 }
 
-module.exports = { RESEND_URL, STATES, parseAddress, labelFor, normCfg, envelopeFrom, approvedByPerson, compose, request, readResponse, normMail };
+function plainOf(env, msg) { return Html.render(env, msg).text; }
+
+module.exports = { RESEND_URL, STATES, plainOf, parseAddress, labelFor, normCfg, envelopeFrom, approvedByPerson, compose, request, readResponse, normMail };

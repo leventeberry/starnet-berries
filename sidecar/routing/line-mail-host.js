@@ -84,11 +84,22 @@ function makeLineMailHost(deps) {
       } catch (e) { return fail(jobId, 'Resend could not be reached: ' + ((e && e.message) || e)); }
       const r = M.readResponse(status, json);
       if (!r.ok) return fail(jobId, r.error);
-      record(jobId, put(jobId, { state: 'sent', id: r.id, error: '', at: d.now() }), false);
+      const sent = put(jobId, { state: 'sent', id: r.id, error: '', at: d.now() });
+      record(jobId, sent, false);
+      sentNote(jobId, sent, msg);
     } catch (e) {
       try { fail(jobId, 'the send could not be recorded: ' + ((e && e.message) || e)); } catch (e2) { failNote('line-mail.fail-record', e2); }
       d.warn('[line-mail] send ' + jobId + ': ' + ((e && e.message) || e));
     } finally { inflight.delete(jobId); }
+  }
+  /* the Commander's copy in chat: who it went to, the subject, and the words as sent (to copy or forward); the bcc, when set, is the
+     same email in their inbox */
+  function sentNote(jobId, env, msg) {
+    try {
+      const words = M.plainOf(env, msg), cap = 3000;
+      d.notify('✉️ Sent the ' + (env.label || 'webhook') + ' email to ' + env.to + ' (job ' + jobId + ')' + (env.bcc ? ' — a copy went to ' + env.bcc : '')
+        + '\nSubject: ' + msg.subject + '\n\n' + (words.length > cap ? words.slice(0, cap) + '\n…' : words));
+    } catch (e) { d.warn('[line-mail] notify: ' + ((e && e.message) || e)); }
   }
   function fail(jobId, why) {
     const env = put(jobId, { state: 'failed', error: String(why).slice(0, 360), at: d.now() });

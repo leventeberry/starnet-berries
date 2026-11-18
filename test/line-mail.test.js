@@ -90,7 +90,7 @@ A.ok(/Email not sent: Resend answered 403/.test(w.job.error), 'and says why');
   A.eq(calls.length, 1, 'an approved delivered job is sent once');
   A.eq(calls[0].o.headers.authorization, 'Bearer re_test', 'the key is read at send time');
   A.eq(calls[0].o.headers['idempotency-key'], 'starnet-job-11111111', 'with the job idempotency key');
-  A.eq(JSON.parse(calls[0].o.body).text, 'Letter', 'the body is the approved draft');
+  A.ok(/^Letter\n/.test(JSON.parse(calls[0].o.body).text), 'the body is the approved draft');
   A.eq(host.get('job-11111111').id, 'em_42', 'the Resend id is kept');
   A.eq(marks[marks.length - 1].m.id, 'em_42', 'and written onto the job');
   host.settled(Object.assign({ id: 'job-11111111', status: 'delivered', output: 'x' }, approved));
@@ -109,12 +109,46 @@ A.ok(/Email not sent: Resend answered 403/.test(w.job.error), 'and says why');
   await new Promise(res => setTimeout(res, 5));
   A.eq(host.get('job-44444444').state, 'failed', 'a refused send is failed');
   A.ok(marks[marks.length - 1].failed, 'the job is marked failed');
-  A.ok(/NOT sent.*domain not verified/.test(notes[0]), 'the owner is told why');
+  A.ok(/NOT sent.*domain not verified/.test(notes[notes.length - 1]), 'the owner is told why');
 
   host.admit(t, body(), 'job-55555555');
   key = '';
   host.settled(Object.assign({ id: 'job-55555555', status: 'delivered', output: 'x' }, approved));
   await new Promise(res => setTimeout(res, 5));
   A.ok(/RESEND_API_KEY/.test(host.get('job-55555555').error), 'no key: failed, and says so');
+
+  /* ---- the designed email (line-mail-html.js) and the Commander's copy ---- */
+  const H = require('../sidecar/routing/line-mail-html.js');
+  const md = 'Hi Ana,\n\n## What to fix first\n- **Meta description**: add one.\n- Images need alt text\n\n1. one\n2. two\n\nSee https://example.com/page. Thanks!';
+  const out = H.render({ label: 'Site Inspector' }, { subject: 'Your <site> report', text: md });
+  A.ok(/<!doctype html>/i.test(out.html) && /Site Inspector report/.test(out.html), 'the HTML names its kind');
+  A.ok(out.html.indexOf('Your &lt;site&gt; report') >= 0 && out.html.indexOf('<site>') < 0, 'the subject is escaped');
+  A.ok(/<h2[^>]*>What to fix first<\/h2>/.test(out.html), 'a ## line is a heading');
+  A.ok(/<ul[^>]*><li[^>]*><strong[^>]*>Meta description<\/strong>: add one\.<\/li>/.test(out.html), 'bullets and bold');
+  A.ok(/<ol[^>]*><li[^>]*>one<\/li><li[^>]*>two<\/li><\/ol>/.test(out.html), 'a numbered list');
+  A.ok(/<a href="https:\/\/example\.com\/page"[^>]*>https:\/\/example\.com\/page<\/a>\./.test(out.html), 'a bare link, its period outside');
+  const evil = H.render({ label: 'Contact form' }, { subject: 's', text: '<script>alert(1)</script> **<img src=x onerror=1>** https://a.b/"onmouseover="x' });
+  A.ok(evil.html.indexOf('<script>') < 0 && evil.html.indexOf('<img') < 0 && evil.html.indexOf('"onmouseover') < 0, 'nothing the body says becomes markup');
+  A.ok(/WHAT TO FIX FIRST\n\n• Meta description: add one\.\n• Images need alt text\n\n1\. one\n2\. two/.test(out.text), 'the text part drops the Markdown marks');
+  A.ok(/Reply to this email/.test(out.text), 'the text part signs off');
+  const env2 = M.envelopeFrom(Object.assign({ bcc: 'levente@example.org' }, CFG), body()).envelope;
+  A.eq(env2.bcc, 'levente@example.org', 'config.mail.bcc rides on the envelope');
+  const q2 = M.request(env2, { subject: 's', text: '**hi**' }, 'job-bcc12345');
+  A.eq(JSON.stringify(q2.body.bcc), '["levente@example.org"]', 'the Commander gets a copy');
+  A.ok(/<strong/.test(q2.body.html) && /^hi\n/.test(q2.body.text), 'the request carries the HTML and its plain text');
+  A.ok(!M.request(r.envelope, { subject: 's', text: 't' }, 'job-x').body.bcc, 'no bcc unless configured');
+  A.ok(!M.envelopeFrom(Object.assign({ bcc: 'v@example.com' }, CFG), body()).envelope.bcc, 'no bcc when the visitor is the bcc');
+  A.ok(!M.normCfg(Object.assign({}, CFG, { bcc: 'not-an-email' })), 'a bad bcc is refused');
+  A.eq(M.normCfg(Object.assign({}, CFG, { bcc: 'a@b.co' })).bcc, 'a@b.co', 'a good bcc is kept');
+  {
+    const notes = [], store2 = (() => { let v = { jobs: {} }; return { load: () => ({ value: JSON.parse(JSON.stringify(v)) }), save: x => { v = x; return { ok: true }; } }; })();
+    const h2 = makeLineMailHost({ store: store2, key: () => 're_test', now: () => 1, warn: () => {}, notify: t => notes.push(t),
+      jobs: { get: () => null, setMail: () => {} }, fetch: async () => ({ status: 200, json: async () => ({ id: 'em_9' }) }) });
+    h2.admit({ id: 'trg_x', config: { mail: Object.assign({ bcc: 'me@example.org' }, CFG) } }, body({ kind: 'audit' }), 'job-66666666');
+    h2.settled(Object.assign({ id: 'job-66666666', status: 'delivered', output: 'Subject: Report\n\n**Score** 80\nVERDICT: blocked' }, approved));
+    await new Promise(res => setTimeout(res, 5));
+    A.eq(h2.get('job-66666666').state, 'sent', 'sent');
+    A.ok(notes.length === 1 && /Sent the Site Inspector email to v@example\.com/.test(notes[0]) && /copy went to me@example\.org/.test(notes[0]) && /Subject: Report/.test(notes[0]) && /Score 80/.test(notes[0]), 'the Commander is told, with the words as sent');
+  }
   A.report('line-mail');
 })();
