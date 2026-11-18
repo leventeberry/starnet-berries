@@ -40,9 +40,9 @@ function makeLineMailHost(deps) {
     const cfg = t && t.config && t.config.mail;
     if (!cfg || !jobId) return '';
     if (load().jobs[jobId]) return load().jobs[jobId].label || '';   // a replayed webhook call: already written down
-    const r = M.envelopeFrom(cfg, rawBody);
-    const env = r.ok ? Object.assign(r.envelope, { at: d.now(), triggerId: t.id })
-      : { state: 'skipped', error: 'No email will be sent: ' + r.reason + '.', to: '', label: '', at: d.now(), triggerId: t.id };
+    const made = M.envelopeFrom(cfg, rawBody), bad = made.ok ? '' : made.reason;
+    const env = made.ok ? Object.assign(made.envelope, { at: d.now(), triggerId: t.id })
+      : { state: 'skipped', error: 'No email will be sent: ' + bad + '.', to: '', label: '', at: d.now(), triggerId: t.id };
     put(jobId, env);
     return env.label || '';
   }
@@ -70,7 +70,7 @@ function makeLineMailHost(deps) {
       const msg = M.compose(env, output);
       if (!msg.ok) return fail(jobId, msg.reason);
       const key = String(d.key() || '').trim();
-      if (!key) return fail(jobId, 'RESEND_API_KEY is not set (TOOLSETS & CONNECTORS › KEYS)');
+      if (!key) return fail(jobId, 'RESEND_API_KEY is not set (add it under KEYS)');
       env = put(jobId, { state: 'sending', subject: msg.subject, at: d.now() });
       record(jobId, env, false);
       const req = M.request(env, msg, jobId);

@@ -172,6 +172,7 @@ const STORES = [
   ['lineShipmentStore', 'exempt', '', 'work-line shipment receipts (ids and states, no title)'],
   ['triggerStore', 'exempt', '', 'trigger runner configuration the Commander made'],
   ['triggerSeenStore', 'exempt', '', 'trigger runner dedup state (hashes of items already seen)'],
+  ['lineMailStore', 'exempt', '', 'line mail send receipts (starnet-berries): who each approved webhook email went to and its Resend id, kept as the record of an external send'],
   ['widgetStore', 'exempt', '', 'widgets placed on the desk: delivered artifacts, kept like delivered workspace files (Q4)'],
   ['appDataStore', 'exempt', '', 'data an installed app keeps for itself, not derived from a session'],
   ['pluginDataStore', 'exempt', '', 'data an installed plugin keeps for itself, not derived from a session'],
