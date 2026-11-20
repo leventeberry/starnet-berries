@@ -50,3 +50,10 @@ browser-mode constraints). Upstream's own docs are in `docs/`.
 - Desktop-only features (OS keychain, Tauri shell, computer control, local voice models)
   need browser-safe fallbacks or should be hidden in hosted mode.
 - Never commit secrets. Provider keys are entered in the UI and stored on the server.
+- Line mail (a webhook job's approved result emailed through Resend): `sidecar/routing/line-mail.js` (pure) and
+  `line-mail-host.js`, the `mail` field + `setMail` in `routing/linejobs.js`, `config.mail` in `routing/triggers.js`, the job
+  `name` passed through `trigger-runner.js` enqueue, `starnet-berries`-marked lines in `sidecar/index.js` (lineMailHost,
+  `pingOwnerChats`), and `test/line-mail.test.js`. Only a job a PERSON approved at a held gate is sent; the key is the KEYS
+  tab's `RESEND_API_KEY`, read at each send; the Idempotency-Key is `starnet-<jobId>`; store `workspaces/line-mail.json`.
+  Each email goes out as designed HTML plus a plain-text part (`sidecar/routing/line-mail-html.js`: light Markdown from the bay,
+  everything escaped); `config.mail.bcc` sends the Commander a copy, and every send pings the owner's chats with the words as sent.

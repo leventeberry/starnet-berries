@@ -1053,6 +1053,7 @@ test/stage-context-loss.test.js
 test/conveyor.test.js
 test/pipeline.test.js
 test/switch.test.js
+test/line-mail.test.js
 test/pipeline.multibay.test.js
 test/pipeline.join-loop.test.js
 test/blueprints.test.js
