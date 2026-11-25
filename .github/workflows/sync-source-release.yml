@@ -18,6 +18,10 @@ concurrency:
 
 jobs:
   sync:
+    # starnet-berries: this mirrors upstream's androoAGI/starnet-releases into upstream's own
+    # Releases. A fork has none of upstream's tags, so here it failed at "Require the immutable
+    # source tag" every 15 minutes. Run it only in the upstream repository.
+    if: github.repository == 'androoAGI/starnet'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

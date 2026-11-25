@@ -28,6 +28,9 @@ browser-mode constraints). Upstream's own docs are in `docs/`.
   full-height windows). The `mobile.css` link is the LAST stylesheet in `<head>` so its phone
   rules win; one small marked tweak lives in `frontend/app/glass-demo.js` (`seat`).
 - `deploy/` and `.github/workflows/deploy-image.yml`.
+- The `if: github.repository == 'androoAGI/starnet'` guard on the `sync` job in
+  `.github/workflows/sync-source-release.yml` (upstream-only release mirror; without it the fork
+  fails every 15 minutes).
 - Figma: `sidecar/mcp/transport.figma.js`, `frontend/app/windows/figma.js` (+ its script tag after
   `windows/trophies.js`), the `figma` row in `sidecar/mcp/catalog.js`, and `starnet-berries`-marked lines in
   `sidecar/index.js` (Figma env client, refreshEndpoint, /api/figma/embed, CSP
